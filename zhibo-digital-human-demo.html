@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智播云枢数字人直播实训 Demo</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: rgba(10, 20, 38, .82);
+      --ink: #eaf2ff;
+      --muted: #9fb2ce;
+      --line: rgba(120, 155, 205, .32);
+      --brand: #25a7ff;
+      --brand-2: #25f4c8;
+      --accent: #f59e0b;
+      --violet: #7c3aed;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 18px 45px rgba(31, 48, 90, .13);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(37,167,255,.22), transparent 28%),
+        radial-gradient(circle at 80% 12%, rgba(37,244,200,.16), transparent 30%),
+        radial-gradient(circle at 42% 95%, rgba(124,58,237,.18), transparent 34%),
+        linear-gradient(135deg, #050b16 0%, #091527 48%, #07111f 100%);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    }
+
+    .app {
+      width: 100%;
+      margin: 0 auto;
+      padding: 14px 18px 18px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 0 30px rgba(37,167,255,.28);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(13, 27, 50, .72);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .stage {
+      position: relative;
+      min-height: calc(100vh - 96px);
+      overflow: hidden;
+      border: 1px solid rgba(66, 153, 225, .32);
+      border-radius: 8px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.04);
+      background:
+        linear-gradient(180deg, rgba(14, 31, 58, .72), rgba(5, 11, 22, .82)),
+        radial-gradient(circle at 20% 16%, rgba(37,167,255,.34), transparent 28%),
+        radial-gradient(circle at 76% 12%, rgba(37,244,200,.2), transparent 24%),
+        linear-gradient(155deg, #0b1729 0%, #0f2038 52%, #07101e 100%);
+    }
+
+    .stage::before,
+    .stage::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .stage::before {
+      inset: 0;
+      background:
+        linear-gradient(120deg, transparent 0 25%, rgba(255,255,255,.1) 26% 29%, transparent 30% 100%),
+        linear-gradient(250deg, transparent 0 62%, rgba(37,244,200,.13) 63% 66%, transparent 67% 100%),
+        repeating-linear-gradient(90deg, rgba(37,167,255,.035) 0 1px, transparent 1px 88px);
+      opacity: 1;
+    }
+
+    .stage::after {
+      left: 7%;
+      right: 7%;
+      bottom: 18px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(37,244,200,.24), transparent 68%);
+      filter: blur(4px);
+    }
+
+    .live-top {
+      position: absolute;
+      z-index: 10;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .live-badge {
+      background: linear-gradient(135deg, #e11d48, #fb7185);
+      color: #fff;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(225, 29, 72, .24);
+    }
+
+    .metrics {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .metric {
+      height: 32px;
+      border-radius: 6px;
+      background: rgba(255,255,255,.84);
+      border: 1px solid rgba(221,226,238,.9);
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .room {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: end center;
+      padding-bottom: 0;
+    }
+
+    .set {
+      position: absolute;
+      z-index: 0;
+      inset: 68px 28px 24px;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(20, 42, 72, .72), rgba(8, 18, 34, .82)),
+        radial-gradient(circle at 50% 0%, rgba(37,167,255,.18), transparent 38%),
+        linear-gradient(90deg, rgba(37,167,255,.12) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(37,244,200,.08) 1px, transparent 1px);
+      background-size: auto, 44px 44px, 44px 44px;
+      border: 1px solid rgba(120,155,205,.26);
+    }
+
+    .set::before {
+      content: "";
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      top: 22px;
+      height: 74px;
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(37,167,255,.95), rgba(37,244,200,.9), rgba(245,158,11,.92));
+      box-shadow: 0 18px 48px rgba(37,167,255,.22), 0 0 38px rgba(37,244,200,.12);
+      opacity: .88;
+    }
+
+    .set::after {
+      content: "AI CROSS-BORDER LIVE TRAINING";
+      position: absolute;
+      left: 42px;
+      top: 46px;
+      color: rgba(255,255,255,.95);
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .studio-card {
+      position: absolute;
+      z-index: 2;
+      left: 42px;
+      bottom: 186px;
+      width: 210px;
+      border: 1px solid rgba(221,226,238,.86);
+      border-radius: 8px;
+      background: rgba(6, 17, 34, .78);
+      box-shadow: 0 14px 32px rgba(0,0,0,.22), inset 0 0 0 1px rgba(255,255,255,.04);
+      padding: 12px;
+    }
+
+    .studio-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #eaf2ff;
+    }
+
+    .studio-card span {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid rgba(221,226,238,.75);
+      padding-top: 7px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .light-stand {
+      position: absolute;
+      z-index: 2;
+      left: 82px;
+      bottom: 54px;
+      width: 78px;
+      height: 220px;
+      border-left: 4px solid rgba(147,197,253,.45);
+    }
+
+    .light-stand::before {
+      content: "";
+      position: absolute;
+      left: -40px;
+      top: 0;
+      width: 82px;
+      height: 58px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #020617, #1d4ed8);
+      box-shadow: 0 0 52px rgba(37,167,255,.48);
+      transform: rotate(-8deg);
+    }
+
+    .light-stand::after {
+      content: "";
+      position: absolute;
+      left: -28px;
+      bottom: 0;
+      width: 60px;
+      height: 4px;
+      background: rgba(147,197,253,.55);
+      box-shadow: -22px 0 0 rgba(147,197,253,.28), 22px 0 0 rgba(147,197,253,.28);
+    }
+
+    .ring-light {
+      position: absolute;
+      z-index: 4;
+      right: 318px;
+      top: 128px;
+      width: 122px;
+      height: 122px;
+      border-radius: 50%;
+      border: 12px solid rgba(225, 245, 255, .86);
+      box-shadow:
+        0 0 32px rgba(255,255,255,.42),
+        0 0 54px rgba(37,167,255,.35),
+        inset 0 0 18px rgba(37,244,200,.22);
+    }
+
+    .ring-light::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 112px;
+      width: 4px;
+      height: 250px;
+      transform: translateX(-50%);
+      background: rgba(147,197,253,.45);
+      border-radius: 999px;
+    }
+
+    .camera-rig {
+      position: absolute;
+      z-index: 5;
+      right: 166px;
+      bottom: 196px;
+      width: 134px;
+      height: 86px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #050b16, #1e293b);
+      border: 1px solid rgba(147,197,253,.38);
+      box-shadow: 0 18px 38px rgba(0,0,0,.3);
+    }
+
+    .camera-rig::before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      top: 17px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, #020617 0 28%, #38bdf8 30% 36%, #0f172a 38% 100%);
+      box-shadow: inset 0 0 20px rgba(37,167,255,.5);
+    }
+
+    .camera-rig::after {
+      content: "REC";
+      position: absolute;
+      right: 15px;
+      top: 18px;
+      color: #fb7185;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .floor-grid {
+      position: absolute;
+      z-index: 1;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 34%;
+      background:
+        linear-gradient(rgba(37,244,200,.18), transparent 1px),
+        linear-gradient(90deg, rgba(37,167,255,.16), transparent 1px);
+      background-size: 42px 28px;
+      transform: perspective(520px) rotateX(58deg);
+      transform-origin: bottom center;
+      opacity: .42;
+    }
+
+    .shelf {
+      position: absolute;
+      z-index: 3;
+      right: 44px;
+      top: 130px;
+      width: 220px;
+      height: 260px;
+      border-radius: 8px;
+      background: rgba(7, 18, 36, .78);
+      border: 1px solid rgba(120,155,205,.36);
+      box-shadow: 0 18px 42px rgba(0,0,0,.24), inset 0 0 0 1px rgba(255,255,255,.04);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .product {
+      height: 54px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #f97316, #facc15);
+      box-shadow: inset 0 -12px 22px rgba(0,0,0,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4a2800;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .product:nth-child(2) { background: linear-gradient(135deg, #22c55e, #a7f3d0); color: #064e3b; }
+    .product:nth-child(3) { background: linear-gradient(135deg, #60a5fa, #e0f2fe); color: #173b76; }
+
+    .desk {
+      position: absolute;
+      z-index: 2;
+      bottom: 34px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(640px, 82%);
+      height: 120px;
+      border-radius: 8px 8px 24px 24px;
+      background:
+        linear-gradient(90deg, transparent 0 52%, rgba(37,244,200,.18) 53%, transparent 54%),
+        linear-gradient(180deg, #132743, #07152a);
+      border: 1px solid rgba(120,155,205,.36);
+      box-shadow: 0 24px 52px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    .desk::before {
+      content: "TikTok Shop | Cross-border Live";
+      position: absolute;
+      left: 24px;
+      top: 18px;
+      font-size: 13px;
+      color: #bfd5f3;
+      font-weight: 700;
+    }
+
+    .desk::after {
+      content: "";
+      position: absolute;
+      right: 30px;
+      top: 24px;
+      width: 92px;
+      height: 34px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #f97316, #facc15);
+      box-shadow: 0 10px 18px rgba(249,115,22,.18);
+    }
+
+    .avatar-wrap {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      bottom: 92px;
+      width: 390px;
+      height: 570px;
+      margin-bottom: 0;
+      transform: translateX(-50%);
+      transform-origin: bottom center;
+      transition: transform .35s ease;
+      filter: drop-shadow(0 34px 36px rgba(0, 0, 0, .34));
+    }
+
+    .avatar-wrap.wave { animation: sway .9s ease-in-out infinite alternate; }
+    .avatar-wrap.bow { transform: translateX(-50%) translateY(14px) rotateX(8deg) scaleY(.96); }
+    .avatar-wrap.nod { animation: nod .55s ease-in-out infinite; }
+
+    @keyframes sway {
+      from { transform: translateX(-50%) rotate(-1.5deg) translateX(-4px); }
+      to { transform: translateX(-50%) rotate(1.5deg) translateX(4px); }
+    }
+
+    @keyframes nod {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(8px); }
+    }
+
+    .head {
+      position: absolute;
+      top: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 168px;
+      height: 198px;
+      border-radius: 48% 48% 44% 44%;
+      background:
+        radial-gradient(circle at 35% 34%, rgba(255,255,255,.32), transparent 18%),
+        radial-gradient(circle at 62% 66%, rgba(231,125,105,.18), transparent 28%),
+        linear-gradient(145deg, #f2c2a2, #d99772 68%, #c9815f);
+      border: 2px solid rgba(70, 45, 28, .12);
+      box-shadow:
+        inset -12px -16px 24px rgba(106, 64, 36, .1),
+        inset 10px 8px 18px rgba(255,255,255,.24);
+      z-index: 4;
+    }
+
+    .hair {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 198px;
+      height: 146px;
+      border-radius: 54% 54% 34% 34%;
+      background:
+        radial-gradient(circle at 28% 28%, rgba(255,255,255,.12), transparent 18%),
+        linear-gradient(145deg, #17131e, #2d2435 72%, #17131e);
+      z-index: 5;
+      box-shadow: inset 0 -12px 18px rgba(255,255,255,.06);
+    }
+
+    .hair::before {
+      content: "";
+      position: absolute;
+      left: 24px;
+      top: 24px;
+      width: 130px;
+      height: 48px;
+      border-radius: 50%;
+      border-top: 9px solid rgba(255,255,255,.1);
+      transform: rotate(-8deg);
+    }
+
+    .hair::after {
+      content: "";
+      position: absolute;
+      right: 4px;
+      bottom: -56px;
+      width: 50px;
+      height: 112px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #241c2b, #17131e);
+    }
+
+    .bang {
+      position: absolute;
+      z-index: 8;
+      top: 42px;
+      left: 110px;
+      width: 74px;
+      height: 88px;
+      border-radius: 68% 0 80% 16%;
+      background: linear-gradient(145deg, #21182a, #3a2b43);
+      transform: rotate(20deg);
+      box-shadow: 22px -6px 0 -10px #21182a;
+    }
+
+    .eye {
+      position: absolute;
+      top: 91px;
+      width: 27px;
+      height: 15px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 35%, #ffffff 0 10%, transparent 11%),
+        radial-gradient(circle at 50% 50%, #0ea5e9 0 20%, #0f172a 21% 100%);
+      z-index: 7;
+      box-shadow: inset 4px 2px 0 rgba(255,255,255,.35);
+    }
+
+    .eye.left { left: 45px; }
+    .eye.right { right: 45px; }
+
+    .brow {
+      position: absolute;
+      top: 76px;
+      width: 30px;
+      height: 8px;
+      border-radius: 999px;
+      border-top: 4px solid rgba(42,31,39,.75);
+      z-index: 8;
+    }
+
+    .brow.left { left: 40px; transform: rotate(-8deg); }
+    .brow.right { right: 40px; transform: rotate(8deg); }
+
+    .nose {
+      position: absolute;
+      top: 109px;
+      left: 50%;
+      width: 12px;
+      height: 32px;
+      border-radius: 999px;
+      border-right: 3px solid rgba(139,92,63,.28);
+      transform: translateX(-50%);
+      z-index: 8;
+    }
+
+    .cheek {
+      position: absolute;
+      top: 132px;
+      width: 28px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(244, 114, 182, .22);
+      z-index: 7;
+    }
+
+    .cheek.left { left: 28px; }
+    .cheek.right { right: 28px; }
+
+    .mouth {
+      position: absolute;
+      top: 150px;
+      left: 50%;
+      width: 32px;
+      height: 12px;
+      transform: translateX(-50%);
+      border-radius: 0 0 999px 999px;
+      background: #8a2430;
+      z-index: 7;
+      transition: height .08s linear, width .08s linear;
+    }
+
+    .speaking .mouth {
+      animation: talk .16s infinite alternate;
+    }
+
+    @keyframes talk {
+      from { height: 8px; width: 24px; }
+      to { height: 25px; width: 38px; }
+    }
+
+    .neck {
+      position: absolute;
+      top: 239px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 58px;
+      height: 62px;
+      background: linear-gradient(180deg, #efbd98, #dfa47a);
+      z-index: 2;
+    }
+
+    .body {
+      position: absolute;
+      top: 286px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 252px;
+      height: 246px;
+      border-radius: 82px 82px 34px 34px;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255,255,255,.18), transparent 20%),
+        linear-gradient(90deg, transparent 48%, rgba(37,244,200,.24) 49%, rgba(37,244,200,.24) 51%, transparent 52%),
+        linear-gradient(135deg, #111827, #164e63 48%, #0f766e 100%);
+      box-shadow:
+        inset 0 -24px 35px rgba(0,0,0,.16),
+        inset 24px 12px 30px rgba(255,255,255,.1);
+      z-index: 2;
+    }
+
+    .body::before,
+    .body::after {
+      content: "";
+      position: absolute;
+      top: 22px;
+      width: 56px;
+      height: 172px;
+      background: rgba(15,23,42,.16);
+      border-radius: 40px 40px 18px 18px;
+    }
+
+    .body::before { left: 18px; transform: rotate(8deg); }
+    .body::after { right: 18px; transform: rotate(-8deg); }
+
+    .collar {
+      position: absolute;
+      top: 298px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 98px;
+      height: 58px;
+      background: #fff;
+      clip-path: polygon(0 0, 50% 100%, 100% 0);
+      z-index: 3;
+    }
+
+    .tie {
+      position: absolute;
+      top: 344px;
+      left: 50%;
+      z-index: 4;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 86px;
+      border-radius: 999px 999px 10px 10px;
+      background: linear-gradient(180deg, #f59e0b, #f97316);
+      box-shadow: inset -4px -8px 12px rgba(0,0,0,.12);
+    }
+
+    .ear {
+      position: absolute;
+      top: 114px;
+      width: 24px;
+      height: 38px;
+      border-radius: 999px;
+      background: #efb990;
+      z-index: 3;
+      box-shadow: inset -5px -4px 8px rgba(106,64,36,.08);
+    }
+
+    .ear.left { left: 89px; }
+    .ear.right { right: 89px; }
+
+    .earring {
+      position: absolute;
+      top: 147px;
+      width: 8px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #facc15, #f59e0b);
+      z-index: 8;
+    }
+
+    .earring.left { left: 96px; }
+    .earring.right { right: 96px; }
+
+    .headset {
+      position: absolute;
+      z-index: 9;
+      top: 96px;
+      left: 99px;
+      width: 192px;
+      height: 92px;
+      border-top: 5px solid #1e293b;
+      border-radius: 50% 50% 0 0;
+      pointer-events: none;
+    }
+
+    .headset::before,
+    .headset::after {
+      content: "";
+      position: absolute;
+      top: 37px;
+      width: 18px;
+      height: 42px;
+      border-radius: 7px;
+      background: linear-gradient(180deg, #0f172a, #334155);
+    }
+
+    .headset::before { left: -5px; }
+    .headset::after { right: -5px; }
+
+    .mic {
+      position: absolute;
+      z-index: 10;
+      top: 174px;
+      right: 98px;
+      width: 54px;
+      height: 20px;
+      border-bottom: 4px solid #1e293b;
+      border-radius: 0 0 999px 999px;
+      transform: rotate(6deg);
+    }
+
+    .mic::after {
+      content: "";
+      position: absolute;
+      right: -4px;
+      bottom: -7px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #0f172a;
+    }
+
+    .arm {
+      position: absolute;
+      top: 318px;
+      width: 54px;
+      height: 178px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #1d4ed8, #0f766e);
+      transform-origin: top center;
+      z-index: 1;
+    }
+
+    .arm.left { left: 42px; transform: rotate(20deg); }
+    .arm.right { right: 42px; transform: rotate(-20deg); }
+    .wave .arm.right { animation: handwave .55s ease-in-out infinite alternate; }
+
+    @keyframes handwave {
+      from { transform: rotate(-40deg); }
+      to { transform: rotate(-88deg); }
+    }
+
+    .danmu {
+      position: absolute;
+      left: 20px;
+      top: 92px;
+      z-index: 6;
+      width: min(360px, 48%);
+      display: grid;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .bubble {
+      width: fit-content;
+      max-width: 100%;
+      padding: 8px 11px;
+      border-radius: 7px;
+      background: rgba(24, 32, 51, .74);
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.35;
+      animation: floatIn .3s ease both;
+    }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .caption {
+      position: absolute;
+      left: 50%;
+      bottom: 158px;
+      z-index: 8;
+      transform: translateX(-50%);
+      width: min(720px, 86%);
+      min-height: 52px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(221,226,238,.95);
+      box-shadow: 0 10px 28px rgba(24,32,51,.12);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    aside {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      background: rgba(8, 20, 39, .82);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 42px rgba(0,0,0,.26), inset 0 0 0 1px rgba(255,255,255,.035);
+      padding: 14px;
+      backdrop-filter: blur(12px);
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2), var(--accent));
+    }
+
+    .panel h2 {
+      margin: 2px 0 10px;
+      font-size: 16px;
+      line-height: 1.25;
+      color: #f4f9ff;
+    }
+
+    label {
+      display: block;
+      margin: 9px 0 5px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid rgba(120,155,205,.38);
+      border-radius: 7px;
+      background: rgba(3, 10, 24, .55);
+      color: #eff6ff;
+      font: inherit;
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 116px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(31,111,235,.65);
+      box-shadow: 0 0 0 3px rgba(37,167,255,.16), 0 0 22px rgba(37,244,200,.1);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 7px;
+      min-height: 38px;
+      padding: 0 12px;
+      background: linear-gradient(135deg, var(--brand), #2459c9);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 18px rgba(31,111,235,.18);
+    }
+
+    button.secondary {
+      background: linear-gradient(180deg, #f4f7fb, #e6ecf7);
+      color: #0b1729;
+      box-shadow: none;
+      border: 1px solid #d7deec;
+    }
+
+    button.green {
+      background: linear-gradient(135deg, var(--brand-2), #078268);
+      box-shadow: 0 10px 18px rgba(16,163,127,.18);
+    }
+
+    button.warn {
+      background: linear-gradient(135deg, var(--warn), #f97316);
+      box-shadow: 0 10px 18px rgba(217,119,6,.18);
+    }
+
+    button:hover { filter: brightness(1.03); }
+    button:active { transform: translateY(1px); }
+
+    .score-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .score-item {
+      display: grid;
+      grid-template-columns: 88px 1fr 40px;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .bar {
+      height: 9px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      transition: width .3s ease;
+    }
+
+    .report {
+      min-height: 124px;
+      padding: 10px;
+      border-radius: 7px;
+      background:
+        linear-gradient(180deg, rgba(8,20,39,.88), rgba(3,10,24,.92)),
+        linear-gradient(90deg, rgba(37,167,255,.08) 1px, transparent 1px);
+      background-size: auto, 18px 18px;
+      border: 1px dashed rgba(120,155,205,.42);
+      color: #cfe1fa;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+      .stage { min-height: 640px; }
+      .shelf,
+      .studio-card,
+      .light-stand,
+      .ring-light,
+      .camera-rig { display: none; }
+    }
+
+    @media (max-width: 620px) {
+      .app { padding: 12px; }
+      header { align-items: flex-start; flex-direction: column; }
+      h1 { font-size: 19px; }
+      .stage { min-height: 590px; }
+      .avatar-wrap { transform: translateX(-50%) scale(.82); bottom: 64px; margin-bottom: 0; }
+      .avatar-wrap.wave { animation: swaySmall .9s ease-in-out infinite alternate; }
+      @keyframes swaySmall {
+        from { transform: translateX(-50%) scale(.82) rotate(-1.5deg) translateX(-4px); }
+        to { transform: translateX(-50%) scale(.82) rotate(1.5deg) translateX(4px); }
+      }
+      .avatar-wrap.bow { transform: translateX(-50%) scale(.82) translateY(12px) rotateX(8deg) scaleY(.96); }
+      .danmu { width: 72%; }
+      .caption { bottom: 138px; font-size: 13px; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="mark">智</div>
+        <div>
+          <h1>智播云枢数字人直播实训 Demo</h1>
+          <div class="subtitle">轻量数字人 + 提词器口播 + 弹幕陪练 + 合规评分 + 自动报告</div>
+        </div>
+      </div>
+      <div class="status">
+        <span class="pill">Web 原型</span>
+        <span class="pill">可接 Coze Workflow</span>
+        <span class="pill">国赛演示链路</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="stage" aria-label="数字人直播间">
+        <div class="set"></div>
+        <div class="floor-grid"></div>
+        <div class="light-stand"></div>
+        <div class="ring-light"></div>
+        <div class="camera-rig"></div>
+        <div class="studio-card">
+          <strong>实时运营看板</strong>
+          <span><b>商品点击率</b><b>18.6%</b></span>
+          <span><b>互动热度</b><b>高</b></span>
+          <span><b>合规状态</b><b>预检中</b></span>
+        </div>
+        <div class="live-top">
+          <div class="live-badge">LIVE</div>
+          <div class="metrics">
+            <div class="metric">观看 2,368</div>
+            <div class="metric">点赞 18.4k</div>
+            <div class="metric">成交 126</div>
+          </div>
+        </div>
+
+        <div class="danmu" id="danmu"></div>
+
+        <div class="shelf" aria-hidden="true">
+          <div class="product">Hot Pot Base</div>
+          <div class="product">Tea Gift Box</div>
+          <div class="product">Silk Scarf</div>
+        </div>
+
+        <div class="room">
+          <div class="avatar-wrap" id="avatar">
+            <div class="hair"></div>
+            <div class="bang"></div>
+            <div class="ear left"></div>
+            <div class="ear right"></div>
+            <div class="earring left"></div>
+            <div class="earring right"></div>
+            <div class="headset"></div>
+            <div class="mic"></div>
+            <div class="head" id="face">
+              <div class="brow left"></div>
+              <div class="brow right"></div>
+              <div class="eye left"></div>
+              <div class="eye right"></div>
+              <div class="nose"></div>
+              <div class="cheek left"></div>
+              <div class="cheek right"></div>
+              <div class="mouth"></div>
+            </div>
+            <div class="neck"></div>
+            <div class="body"></div>
+            <div class="collar"></div>
+            <div class="tie"></div>
+            <div class="arm left"></div>
+            <div class="arm right"></div>
+          </div>
+          <div class="desk"></div>
+        </div>
+
+        <div class="caption" id="caption">点击“开始口播”，数字人会朗读提词器内容，并同步嘴型动画。</div>
+      </section>
+
+      <aside>
+        <section class="panel">
+          <h2>直播任务</h2>
+          <div class="row">
+            <div>
+              <label for="country">目标市场</label>
+              <select id="country">
+                <option>美国</option>
+                <option>巴西</option>
+                <option>俄罗斯</option>
+                <option>东南亚</option>
+              </select>
+            </div>
+            <div>
+              <label for="platform">直播平台</label>
+              <select id="platform">
+                <option>TikTok Shop</option>
+                <option>YouTube Live</option>
+                <option>Instagram Live</option>
+                <option>淘宝直播</option>
+                <option>抖音电商</option>
+              </select>
+            </div>
+          </div>
+          <label for="productName">商品</label>
+          <input id="productName" value="重庆火锅底料">
+          <label for="script">数字人提词器</label>
+          <textarea id="script">Hi everyone, welcome to our live room. Today I am introducing Chongqing hot pot base. It brings a rich spicy flavor and is easy to cook at home. If you like bold taste, this is a great choice for family dinner. Please check the product card for ingredients, shipping time, and discount details.</textarea>
+          <div class="buttons">
+            <button id="speakBtn">开始口播</button>
+            <button class="secondary" id="stopBtn">停止</button>
+            <button class="green" id="generateBtn">生成示例脚本</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>动作控制</h2>
+          <div class="buttons">
+            <button class="secondary" data-action="wave">招手</button>
+            <button class="secondary" data-action="nod">点头</button>
+            <button class="secondary" data-action="bow">鞠躬</button>
+            <button class="secondary" data-action="idle">复位</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>弹幕陪练</h2>
+          <div class="buttons">
+            <button class="warn" data-danmu="price">价格质疑</button>
+            <button class="warn" data-danmu="effect">效果承诺</button>
+            <button class="warn" data-danmu="logistics">物流售后</button>
+          </div>
+          <label for="answer">主播回答</label>
+          <textarea id="answer" placeholder="输入主播准备如何回答弹幕，点击评分。"></textarea>
+          <div class="buttons">
+            <button id="scoreBtn">回答评分</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>训练评分</h2>
+          <div class="score-grid" id="scores"></div>
+        </section>
+
+        <section class="panel">
+          <h2>自动报告</h2>
+          <div class="report" id="report">等待训练数据生成报告。</div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const avatar = document.getElementById("avatar");
+    const face = document.getElementById("face");
+    const caption = document.getElementById("caption");
+    const script = document.getElementById("script");
+    const danmu = document.getElementById("danmu");
+    const answer = document.getElementById("answer");
+    const scores = document.getElementById("scores");
+    const report = document.getElementById("report");
+    const productName = document.getElementById("productName");
+    const platform = document.getElementById("platform");
+    const country = document.getElementById("country");
+
+    const scoreItems = ["合规性", "说服力", "情绪安抚", "转化能力", "口语自然度"];
+    let lastScenario = "未开始";
+    let utterance = null;
+
+    function setAction(action) {
+      avatar.classList.remove("wave", "nod", "bow");
+      if (action !== "idle") avatar.classList.add(action);
+      if (action !== "idle") {
+        window.setTimeout(() => avatar.classList.remove(action), 2200);
+      }
+    }
+
+    function speak() {
+      stopSpeak();
+      const text = script.value.trim();
+      if (!text) return;
+      caption.textContent = text;
+      face.classList.add("speaking");
+      setAction("wave");
+      utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = /[a-zA-Z]/.test(text) ? "en-US" : "zh-CN";
+      utterance.rate = 0.96;
+      utterance.pitch = 1.08;
+      utterance.onend = () => face.classList.remove("speaking");
+      utterance.onerror = () => face.classList.remove("speaking");
+      speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeak() {
+      speechSynthesis.cancel();
+      face.classList.remove("speaking");
+    }
+
+    function pushDanmu(text) {
+      const item = document.createElement("div");
+      item.className = "bubble";
+      item.textContent = text;
+      danmu.prepend(item);
+      while (danmu.children.length > 6) danmu.removeChild(danmu.lastChild);
+    }
+
+    async function callBridge(route, payload) {
+      const base = window.COZE_BRIDGE_URL || "http://localhost:8787";
+      const response = await fetch(`${base}${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error(`Bridge request failed: ${response.status}`);
+      return response.json();
+    }
+
+    async function scenario(type) {
+      const product = productName.value || "商品";
+      const map = {
+        price: [
+          `This ${product} is too expensive. Is it the lowest price?`,
+          "Other stores are cheaper. Why should I buy here?"
+        ],
+        effect: [
+          `Can you promise this ${product} works for everyone?`,
+          "Will I definitely see the result after using it?"
+        ],
+        logistics: [
+          "How long does shipping take to the US?",
+          "What if the package is damaged or delayed?"
+        ]
+      };
+      lastScenario = type === "price" ? "价格质疑" : type === "effect" ? "效果承诺" : "物流售后";
+      let lines = map[type];
+      try {
+        const ai = await callBridge("/api/danmu", {
+          product: productName.value,
+          platform: platform.value,
+          country: country.value,
+          scenarioType: type
+        });
+        if (Array.isArray(ai.danmu) && ai.danmu.length) lines = ai.danmu;
+      } catch (error) {
+        console.info("Using local danmu fallback", error);
+      }
+      lines.forEach((x, i) => window.setTimeout(() => pushDanmu(x), i * 350));
+      caption.textContent = `训练场景：${lastScenario}。请在右侧输入主播回答，系统将从五个维度评分。`;
+    }
+
+    function calcScore(text) {
+      const risky = ["全网最低", "百分百", "100%", "一定", "保证", "根治", "永久", "绝对", "最有效", "lowest price", "guarantee", "cure"];
+      const hasRisk = risky.some(w => text.toLowerCase().includes(w.toLowerCase()));
+      const length = text.trim().length;
+      const empathy = /理解|放心|可以|建议|thank|understand|please|check|support/i.test(text);
+      const detail = /成分|物流|售后|详情|product card|shipping|ingredient|refund|service/i.test(text);
+      return {
+        "合规性": hasRisk ? 58 : 88,
+        "说服力": Math.min(92, 55 + Math.floor(length / 8) + (detail ? 12 : 0)),
+        "情绪安抚": empathy ? 86 : 62,
+        "转化能力": detail ? 82 : 66,
+        "口语自然度": Math.min(90, 64 + Math.floor(length / 12))
+      };
+    }
+
+    function renderScores(values) {
+      scores.innerHTML = "";
+      scoreItems.forEach(name => {
+        const value = values[name];
+        const item = document.createElement("div");
+        item.className = "score-item";
+        item.innerHTML = `<span>${name}</span><div class="bar"><span style="width:${value}%"></span></div><strong>${value}</strong>`;
+        scores.appendChild(item);
+      });
+    }
+
+    async function scoreAnswer() {
+      const text = answer.value.trim();
+      if (!text) {
+        answer.value = "Thank you for asking. Please check the product card for the current discount. We do not promise the lowest price, but we provide clear ingredients, stable shipping information, and after-sales support.";
+      }
+      const finalText = answer.value.trim();
+      try {
+        const ai = await callBridge("/api/score", {
+          product: productName.value,
+          platform: platform.value,
+          country: country.value,
+          scenario: lastScenario,
+          answer: finalText
+        });
+        if (ai.scores && ai.report) {
+          renderScores(ai.scores);
+          report.textContent = ai.report;
+          const avg = Math.round(Object.values(ai.scores).reduce((a, b) => a + Number(b), 0) / Object.values(ai.scores).length);
+          caption.textContent = `Coze 智能体评分完成：综合得分 ${avg}/100。`;
+          setAction(avg >= 80 ? "nod" : "bow");
+          return;
+        }
+      } catch (error) {
+        console.info("Using local score fallback", error);
+      }
+      const values = calcScore(finalText);
+      renderScores(values);
+      const avg = Math.round(Object.values(values).reduce((a, b) => a + b, 0) / scoreItems.length);
+      const hasRisk = values["合规性"] < 70;
+      report.textContent =
+        `训练对象：${productName.value}\n` +
+        `目标市场：${country.value} | 平台：${platform.value}\n` +
+        `训练场景：${lastScenario}\n` +
+        `综合得分：${avg}/100\n\n` +
+        `诊断结论：${hasRisk ? "回答中存在较明显合规风险，需避免绝对化承诺、最低价承诺或效果保证。" : "回答整体较稳健，能够兼顾说明、安抚和转化。" }\n\n` +
+        `优化建议：\n` +
+        `1. 用“当前活动价”“以商品卡为准”替代“全网最低”。\n` +
+        `2. 用“适合部分需求”“建议查看成分/说明”替代“保证有效”。\n` +
+        `3. 对跨境物流问题，应明确时效区间和售后路径，避免绝对承诺。\n` +
+        `4. 可将本报告接入 Coze 复盘智能体，生成完整实训记录。`;
+      caption.textContent = `评分完成：综合得分 ${avg}/100。`;
+      setAction(avg >= 80 ? "nod" : "bow");
+    }
+
+    async function generateScript() {
+      const product = productName.value || "重庆火锅底料";
+      try {
+        const ai = await callBridge("/api/generate-script", {
+          product,
+          platform: platform.value,
+          country: country.value
+        });
+        if (ai.script) {
+          script.value = ai.script;
+          caption.textContent = "已从 Coze 智能体生成直播脚本，可直接开始数字人口播。";
+          return;
+        }
+      } catch (error) {
+        console.info("Using local script fallback", error);
+      }
+      script.value =
+        `Hi everyone, welcome to our live room. Today we are introducing ${product}. ` +
+        `It is designed for customers who enjoy rich and spicy flavor at home. ` +
+        `Please check the product card for ingredients, package details, discount information, and shipping time. ` +
+        `If you have questions about taste, cooking method, or delivery, send them in the chat and I will answer them one by one.`;
+      caption.textContent = "已生成跨境直播英文口播脚本，可直接开始数字人口播。";
+    }
+
+    document.getElementById("speakBtn").addEventListener("click", speak);
+    document.getElementById("stopBtn").addEventListener("click", stopSpeak);
+    document.getElementById("generateBtn").addEventListener("click", generateScript);
+    document.getElementById("scoreBtn").addEventListener("click", scoreAnswer);
+
+    document.querySelectorAll("[data-action]").forEach(btn => {
+      btn.addEventListener("click", () => setAction(btn.dataset.action));
+    });
+
+    document.querySelectorAll("[data-danmu]").forEach(btn => {
+      btn.addEventListener("click", () => scenario(btn.dataset.danmu));
+    });
+
+    renderScores({
+      "合规性": 0,
+      "说服力": 0,
+      "情绪安抚": 0,
+      "转化能力": 0,
+      "口语自然度": 0
+    });
+  </script>
+</body>
+</html>

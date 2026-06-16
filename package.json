@@ -1,0 +1,14 @@
+{
+  "name": "outputs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "coze-bridge-server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node coze-bridge-server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

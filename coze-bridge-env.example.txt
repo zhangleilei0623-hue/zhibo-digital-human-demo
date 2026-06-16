@@ -1,0 +1,16 @@
+# 智播云枢 Coze 桥接服务配置示例
+# 不要把真实 Token 发到聊天里；在你自己的 PowerShell 里设置即可。
+
+# 必填：Coze API Token / Personal Access Token
+set COZE_API_TOKEN=你的_Coze_Token
+
+# 三个 Workflow 发布后的 API 地址，按你在 Coze 中实际发布的地址填写。
+set COZE_SCRIPT_URL=https://你的脚本生成Workflow地址
+set COZE_DANMU_URL=https://你的弹幕陪练Workflow地址
+set COZE_SCORE_URL=https://你的回答评分Workflow地址
+
+# 可选：本地端口
+set PORT=8787
+
+# 启动桥接服务
+node C:\Users\86137\Documents\Codex\2026-06-14\new-chat-2\outputs\coze-bridge-server.js
