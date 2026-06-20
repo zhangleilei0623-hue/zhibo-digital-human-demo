@@ -6,18 +6,14 @@
   <title>智播云枢数字人直播实训 Demo</title>
   <style>
     :root {
-      --bg: #f6f7fb;
-      --panel: rgba(10, 20, 38, .82);
       --ink: #eaf2ff;
       --muted: #9fb2ce;
       --line: rgba(120, 155, 205, .32);
       --brand: #25a7ff;
-      --brand-2: #25f4c8;
-      --accent: #f59e0b;
-      --violet: #7c3aed;
-      --warn: #d97706;
-      --danger: #dc2626;
-      --shadow: 0 18px 45px rgba(31, 48, 90, .13);
+      --mint: #25f4c8;
+      --orange: #f59e0b;
+      --danger: #fb416f;
+      --panel: rgba(8, 20, 39, .82);
     }
 
     * { box-sizing: border-box; }
@@ -25,19 +21,33 @@
     body {
       margin: 0;
       min-height: 100vh;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
       background:
         radial-gradient(circle at 12% 8%, rgba(37,167,255,.22), transparent 28%),
         radial-gradient(circle at 80% 12%, rgba(37,244,200,.16), transparent 30%),
         radial-gradient(circle at 42% 95%, rgba(124,58,237,.18), transparent 34%),
         linear-gradient(135deg, #050b16 0%, #091527 48%, #07111f 100%);
-      color: var(--ink);
-      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 4px),
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,.08), transparent 32%);
+      mix-blend-mode: screen;
+      opacity: .55;
     }
 
     .app {
       width: 100%;
       margin: 0 auto;
-      padding: 14px 18px 18px;
+      height: 100vh;
+      padding: 10px 14px;
+      overflow: hidden;
     }
 
     header {
@@ -45,8 +55,14 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 12px;
-      padding: 0 4px;
+      margin-bottom: 8px;
+      padding: 6px 12px;
+      height: 56px;
+      border: 1px solid rgba(120,155,205,.24);
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(8,20,39,.78), rgba(3,10,24,.58));
+      box-shadow: 0 18px 42px rgba(0,0,0,.2), inset 0 0 0 1px rgba(255,255,255,.035);
+      backdrop-filter: blur(12px);
     }
 
     .brand {
@@ -60,19 +76,20 @@
       width: 40px;
       height: 40px;
       border-radius: 8px;
-      background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      box-shadow: 0 0 30px rgba(37,167,255,.28);
       display: grid;
       place-items: center;
-      color: #fff;
-      font-weight: 800;
       flex: 0 0 auto;
+      color: #fff;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--brand), var(--mint));
+      box-shadow: 0 0 30px rgba(37,167,255,.28);
     }
 
     h1 {
       margin: 0;
       font-size: 22px;
       line-height: 1.2;
+      letter-spacing: 0;
     }
 
     .subtitle {
@@ -81,40 +98,53 @@
       font-size: 13px;
     }
 
-    .status {
+    .header-meta {
       display: flex;
-      gap: 8px;
       align-items: center;
-      flex-wrap: wrap;
       justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .pill {
+    .sys-chip {
+      height: 30px;
       display: inline-flex;
       align-items: center;
-      height: 30px;
+      gap: 7px;
       padding: 0 10px;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(120,155,205,.3);
       border-radius: 999px;
-      background: rgba(13, 27, 50, .72);
-      color: var(--muted);
+      background: rgba(3,10,24,.55);
+      color: #dbeafe;
       font-size: 12px;
       white-space: nowrap;
     }
 
+    .sys-chip::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 12px rgba(37,244,200,.8);
+    }
+
     main {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 420px;
+      grid-template-columns: minmax(0, 1fr) minmax(460px, 520px);
       gap: 14px;
       align-items: stretch;
+      height: calc(100vh - 78px);
+      min-height: 0;
     }
 
     .stage {
       position: relative;
-      min-height: calc(100vh - 96px);
+      min-height: 0;
+      height: 100%;
       overflow: hidden;
       border: 1px solid rgba(66, 153, 225, .32);
-      border-radius: 8px;
+      border-radius: 10px;
       box-shadow: 0 24px 70px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.04);
       background:
         linear-gradient(180deg, rgba(14, 31, 58, .72), rgba(5, 11, 22, .82)),
@@ -129,6 +159,33 @@
       position: absolute;
       z-index: 1;
       pointer-events: none;
+    }
+
+    .stage-system {
+      position: absolute;
+      z-index: 9;
+      left: 50%;
+      top: 16px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px;
+      border: 1px solid rgba(120,155,205,.28);
+      border-radius: 999px;
+      background: rgba(3,10,24,.52);
+      box-shadow: 0 12px 32px rgba(0,0,0,.24);
+      backdrop-filter: blur(10px);
+    }
+
+    .stage-system span {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(37,167,255,.12);
+      color: #cfe7ff;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     .stage::before {
@@ -150,68 +207,18 @@
       filter: blur(4px);
     }
 
-    .live-top {
-      position: absolute;
-      z-index: 10;
-      top: 16px;
-      left: 16px;
-      right: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .live-badge {
-      background: linear-gradient(135deg, #e11d48, #fb7185);
-      color: #fff;
-      border-radius: 6px;
-      padding: 7px 10px;
-      font-size: 13px;
-      font-weight: 700;
-      box-shadow: 0 10px 25px rgba(225, 29, 72, .24);
-    }
-
-    .metrics {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .metric {
-      height: 32px;
-      border-radius: 6px;
-      background: rgba(255,255,255,.84);
-      border: 1px solid rgba(221,226,238,.9);
-      display: inline-flex;
-      align-items: center;
-      padding: 0 10px;
-      font-size: 13px;
-      color: var(--ink);
-    }
-
-    .room {
-      position: absolute;
-      inset: 0;
-      z-index: 3;
-      display: grid;
-      place-items: end center;
-      padding-bottom: 0;
-    }
-
     .set {
       position: absolute;
       z-index: 0;
       inset: 68px 28px 24px;
       border-radius: 8px;
+      border: 1px solid rgba(120,155,205,.26);
       background:
         linear-gradient(180deg, rgba(20, 42, 72, .72), rgba(8, 18, 34, .82)),
         radial-gradient(circle at 50% 0%, rgba(37,167,255,.18), transparent 38%),
         linear-gradient(90deg, rgba(37,167,255,.12) 1px, transparent 1px),
         linear-gradient(0deg, rgba(37,244,200,.08) 1px, transparent 1px);
-      background-size: auto, 44px 44px, 44px 44px;
-      border: 1px solid rgba(120,155,205,.26);
+      background-size: auto, auto, 44px 44px, 44px 44px;
     }
 
     .set::before {
@@ -222,8 +229,7 @@
       top: 22px;
       height: 74px;
       border-radius: 8px;
-      background:
-        linear-gradient(90deg, rgba(37,167,255,.95), rgba(37,244,200,.9), rgba(245,158,11,.92));
+      background: linear-gradient(90deg, rgba(37,167,255,.95), rgba(37,244,200,.9), rgba(245,158,11,.92));
       box-shadow: 0 18px 48px rgba(37,167,255,.22), 0 0 38px rgba(37,244,200,.12);
       opacity: .88;
     }
@@ -239,30 +245,125 @@
       letter-spacing: 0;
     }
 
+    .floor-grid {
+      position: absolute;
+      z-index: 1;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 34%;
+      background:
+        linear-gradient(rgba(37,244,200,.18), transparent 1px),
+        linear-gradient(90deg, rgba(37,167,255,.16), transparent 1px);
+      background-size: 42px 28px;
+      transform: perspective(520px) rotateX(58deg);
+      transform-origin: bottom center;
+      opacity: .42;
+    }
+
+    .live-top {
+      position: absolute;
+      z-index: 10;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .live-left {
+      display: grid;
+      gap: 8px;
+      align-items: start;
+      justify-items: start;
+    }
+
+    .live-badge {
+      padding: 7px 10px;
+      border-radius: 6px;
+      color: #fff;
+      background: linear-gradient(135deg, #f43f5e, #be123c);
+      box-shadow: 0 10px 25px rgba(225, 29, 72, .32), 0 0 22px rgba(244,63,94,.22);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .metrics {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .metric {
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      border: 1px solid rgba(37,244,200,.42);
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(2,8,23,.94), rgba(10,43,72,.9));
+      color: #f8fbff;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 0 18px rgba(37,167,255,.12);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .danmu {
+      position: absolute;
+      left: 20px;
+      top: 92px;
+      z-index: 6;
+      width: min(360px, 48%);
+      display: grid;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .bubble {
+      width: fit-content;
+      max-width: 100%;
+      padding: 8px 11px;
+      border-radius: 7px;
+      background: rgba(3, 10, 24, .74);
+      border: 1px solid rgba(120,155,205,.28);
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.35;
+      animation: floatIn .3s ease both;
+    }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
     .studio-card {
       position: absolute;
       z-index: 2;
       left: 42px;
-      bottom: 186px;
+      bottom: 148px;
       width: 210px;
-      border: 1px solid rgba(221,226,238,.86);
+      padding: 12px;
+      border: 1px solid rgba(221,226,238,.22);
       border-radius: 8px;
       background: rgba(6, 17, 34, .78);
       box-shadow: 0 14px 32px rgba(0,0,0,.22), inset 0 0 0 1px rgba(255,255,255,.04);
-      padding: 12px;
+      color: #eaf2ff;
     }
 
     .studio-card strong {
       display: block;
       margin-bottom: 8px;
       font-size: 13px;
-      color: #eaf2ff;
     }
 
     .studio-card span {
       display: flex;
       justify-content: space-between;
-      border-top: 1px solid rgba(221,226,238,.75);
+      border-top: 1px solid rgba(221,226,238,.22);
       padding-top: 7px;
       margin-top: 7px;
       color: var(--muted);
@@ -307,7 +408,7 @@
       position: absolute;
       z-index: 4;
       right: 318px;
-      top: 128px;
+      top: 112px;
       width: 122px;
       height: 122px;
       border-radius: 50%;
@@ -334,7 +435,7 @@
       position: absolute;
       z-index: 5;
       right: 166px;
-      bottom: 196px;
+      bottom: 156px;
       width: 134px;
       height: 86px;
       border-radius: 12px;
@@ -351,8 +452,7 @@
       width: 52px;
       height: 52px;
       border-radius: 50%;
-      background:
-        radial-gradient(circle at 50% 50%, #020617 0 28%, #38bdf8 30% 36%, #0f172a 38% 100%);
+      background: radial-gradient(circle at 50% 50%, #020617 0 28%, #38bdf8 30% 36%, #0f172a 38% 100%);
       box-shadow: inset 0 0 20px rgba(37,167,255,.5);
     }
 
@@ -366,101 +466,115 @@
       font-weight: 900;
     }
 
-    .floor-grid {
-      position: absolute;
-      z-index: 1;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 34%;
-      background:
-        linear-gradient(rgba(37,244,200,.18), transparent 1px),
-        linear-gradient(90deg, rgba(37,167,255,.16), transparent 1px);
-      background-size: 42px 28px;
-      transform: perspective(520px) rotateX(58deg);
-      transform-origin: bottom center;
-      opacity: .42;
-    }
-
     .shelf {
       position: absolute;
       z-index: 3;
       right: 44px;
-      top: 130px;
+      top: 118px;
       width: 220px;
       height: 260px;
-      border-radius: 8px;
-      background: rgba(7, 18, 36, .78);
-      border: 1px solid rgba(120,155,205,.36);
-      box-shadow: 0 18px 42px rgba(0,0,0,.24), inset 0 0 0 1px rgba(255,255,255,.04);
       padding: 18px;
       display: grid;
       gap: 14px;
       align-content: start;
+      border: 1px solid rgba(120,155,205,.36);
+      border-radius: 8px;
+      background: rgba(7, 18, 36, .78);
+      box-shadow: 0 18px 42px rgba(0,0,0,.24), inset 0 0 0 1px rgba(255,255,255,.04);
     }
 
     .product {
       height: 54px;
-      border-radius: 7px;
-      background: linear-gradient(135deg, #f97316, #facc15);
-      box-shadow: inset 0 -12px 22px rgba(0,0,0,.08);
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #f97316, #facc15);
+      box-shadow: inset 0 -12px 22px rgba(0,0,0,.08);
       color: #4a2800;
-      font-weight: 800;
       font-size: 14px;
+      font-weight: 800;
     }
 
     .product:nth-child(2) { background: linear-gradient(135deg, #22c55e, #a7f3d0); color: #064e3b; }
     .product:nth-child(3) { background: linear-gradient(135deg, #60a5fa, #e0f2fe); color: #173b76; }
 
+    .room {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: end center;
+      padding-bottom: 0;
+    }
+
     .desk {
       position: absolute;
       z-index: 2;
-      bottom: 34px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       width: min(640px, 82%);
       height: 120px;
+      border: 1px solid rgba(120,155,205,.36);
       border-radius: 8px 8px 24px 24px;
       background:
         linear-gradient(90deg, transparent 0 52%, rgba(37,244,200,.18) 53%, transparent 54%),
         linear-gradient(180deg, #132743, #07152a);
-      border: 1px solid rgba(120,155,205,.36);
       box-shadow: 0 24px 52px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.12);
     }
 
     .desk::before {
-      content: "TikTok Shop | Cross-border Live";
+      content: "";
       position: absolute;
       left: 24px;
       top: 18px;
-      font-size: 13px;
       color: #bfd5f3;
+      font-size: 13px;
       font-weight: 700;
     }
 
     .desk::after {
-      content: "";
+      content: "LIVE DEAL";
       position: absolute;
       right: 30px;
       top: 24px;
       width: 92px;
       height: 34px;
+      display: grid;
+      place-items: center;
       border-radius: 6px;
       background: linear-gradient(135deg, #f97316, #facc15);
       box-shadow: 0 10px 18px rgba(249,115,22,.18);
+      color: #3a2100;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .platform-label {
+      position: static;
+      max-width: min(360px, 46vw);
+      padding: 7px 10px;
+      border: 1px solid rgba(120,155,205,.42);
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(2,8,23,.94), rgba(10,43,72,.9));
+      box-shadow: 0 0 18px rgba(37,167,255,.12);
+      color: #bfd5f3;
+      font-size: 13px;
+      font-weight: 700;
+      pointer-events: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .avatar-wrap {
       position: absolute;
       z-index: 3;
       left: 50%;
-      bottom: 92px;
+      bottom: 54px;
       width: 390px;
       height: 570px;
-      margin-bottom: 0;
       transform: translateX(-50%);
       transform-origin: bottom center;
       transition: transform .35s ease;
@@ -485,33 +599,33 @@
       position: absolute;
       top: 48px;
       left: 50%;
-      transform: translateX(-50%);
+      z-index: 4;
       width: 168px;
       height: 198px;
+      transform: translateX(-50%);
+      border: 2px solid rgba(70, 45, 28, .12);
       border-radius: 48% 48% 44% 44%;
       background:
         radial-gradient(circle at 35% 34%, rgba(255,255,255,.32), transparent 18%),
         radial-gradient(circle at 62% 66%, rgba(231,125,105,.18), transparent 28%),
         linear-gradient(145deg, #f2c2a2, #d99772 68%, #c9815f);
-      border: 2px solid rgba(70, 45, 28, .12);
       box-shadow:
         inset -12px -16px 24px rgba(106, 64, 36, .1),
         inset 10px 8px 18px rgba(255,255,255,.24);
-      z-index: 4;
     }
 
     .hair {
       position: absolute;
       top: 22px;
       left: 50%;
-      transform: translateX(-50%);
+      z-index: 5;
       width: 198px;
       height: 146px;
+      transform: translateX(-50%);
       border-radius: 54% 54% 34% 34%;
       background:
         radial-gradient(circle at 28% 28%, rgba(255,255,255,.12), transparent 18%),
         linear-gradient(145deg, #17131e, #2d2435 72%, #17131e);
-      z-index: 5;
       box-shadow: inset 0 -12px 18px rgba(255,255,255,.06);
     }
 
@@ -522,8 +636,8 @@
       top: 24px;
       width: 130px;
       height: 48px;
-      border-radius: 50%;
       border-top: 9px solid rgba(255,255,255,.1);
+      border-radius: 50%;
       transform: rotate(-8deg);
     }
 
@@ -554,13 +668,13 @@
     .eye {
       position: absolute;
       top: 91px;
+      z-index: 7;
       width: 27px;
       height: 15px;
       border-radius: 50%;
       background:
         radial-gradient(circle at 35% 35%, #ffffff 0 10%, transparent 11%),
         radial-gradient(circle at 50% 50%, #0ea5e9 0 20%, #0f172a 21% 100%);
-      z-index: 7;
       box-shadow: inset 4px 2px 0 rgba(255,255,255,.35);
     }
 
@@ -570,11 +684,11 @@
     .brow {
       position: absolute;
       top: 76px;
+      z-index: 8;
       width: 30px;
       height: 8px;
-      border-radius: 999px;
       border-top: 4px solid rgba(42,31,39,.75);
-      z-index: 8;
+      border-radius: 999px;
     }
 
     .brow.left { left: 40px; transform: rotate(-8deg); }
@@ -584,22 +698,22 @@
       position: absolute;
       top: 109px;
       left: 50%;
+      z-index: 8;
       width: 12px;
       height: 32px;
-      border-radius: 999px;
-      border-right: 3px solid rgba(139,92,63,.28);
       transform: translateX(-50%);
-      z-index: 8;
+      border-right: 3px solid rgba(139,92,63,.28);
+      border-radius: 999px;
     }
 
     .cheek {
       position: absolute;
       top: 132px;
+      z-index: 7;
       width: 28px;
       height: 12px;
       border-radius: 999px;
       background: rgba(244, 114, 182, .22);
-      z-index: 7;
     }
 
     .cheek.left { left: 28px; }
@@ -609,18 +723,16 @@
       position: absolute;
       top: 150px;
       left: 50%;
+      z-index: 7;
       width: 32px;
       height: 12px;
       transform: translateX(-50%);
       border-radius: 0 0 999px 999px;
       background: #8a2430;
-      z-index: 7;
       transition: height .08s linear, width .08s linear;
     }
 
-    .speaking .mouth {
-      animation: talk .16s infinite alternate;
-    }
+    .speaking .mouth { animation: talk .16s infinite alternate; }
 
     @keyframes talk {
       from { height: 8px; width: 24px; }
@@ -631,20 +743,21 @@
       position: absolute;
       top: 239px;
       left: 50%;
-      transform: translateX(-50%);
+      z-index: 2;
       width: 58px;
       height: 62px;
+      transform: translateX(-50%);
       background: linear-gradient(180deg, #efbd98, #dfa47a);
-      z-index: 2;
     }
 
     .body {
       position: absolute;
       top: 286px;
       left: 50%;
-      transform: translateX(-50%);
+      z-index: 2;
       width: 252px;
       height: 246px;
+      transform: translateX(-50%);
       border-radius: 82px 82px 34px 34px;
       background:
         radial-gradient(circle at 50% 18%, rgba(255,255,255,.18), transparent 20%),
@@ -653,7 +766,6 @@
       box-shadow:
         inset 0 -24px 35px rgba(0,0,0,.16),
         inset 24px 12px 30px rgba(255,255,255,.1);
-      z-index: 2;
     }
 
     .body::before,
@@ -663,8 +775,8 @@
       top: 22px;
       width: 56px;
       height: 172px;
-      background: rgba(15,23,42,.16);
       border-radius: 40px 40px 18px 18px;
+      background: rgba(15,23,42,.16);
     }
 
     .body::before { left: 18px; transform: rotate(8deg); }
@@ -674,12 +786,12 @@
       position: absolute;
       top: 298px;
       left: 50%;
-      transform: translateX(-50%);
+      z-index: 3;
       width: 98px;
       height: 58px;
+      transform: translateX(-50%);
       background: #fff;
       clip-path: polygon(0 0, 50% 100%, 100% 0);
-      z-index: 3;
     }
 
     .tie {
@@ -687,9 +799,9 @@
       top: 344px;
       left: 50%;
       z-index: 4;
-      transform: translateX(-50%);
       width: 22px;
       height: 86px;
+      transform: translateX(-50%);
       border-radius: 999px 999px 10px 10px;
       background: linear-gradient(180deg, #f59e0b, #f97316);
       box-shadow: inset -4px -8px 12px rgba(0,0,0,.12);
@@ -698,11 +810,11 @@
     .ear {
       position: absolute;
       top: 114px;
+      z-index: 3;
       width: 24px;
       height: 38px;
       border-radius: 999px;
       background: #efb990;
-      z-index: 3;
       box-shadow: inset -5px -4px 8px rgba(106,64,36,.08);
     }
 
@@ -712,11 +824,11 @@
     .earring {
       position: absolute;
       top: 147px;
+      z-index: 8;
       width: 8px;
       height: 16px;
       border-radius: 999px;
       background: linear-gradient(180deg, #facc15, #f59e0b);
-      z-index: 8;
     }
 
     .earring.left { left: 96px; }
@@ -755,9 +867,9 @@
       right: 98px;
       width: 54px;
       height: 20px;
+      transform: rotate(6deg);
       border-bottom: 4px solid #1e293b;
       border-radius: 0 0 999px 999px;
-      transform: rotate(6deg);
     }
 
     .mic::after {
@@ -774,12 +886,12 @@
     .arm {
       position: absolute;
       top: 318px;
+      z-index: 1;
       width: 54px;
       height: 178px;
       border-radius: 999px;
       background: linear-gradient(180deg, #1d4ed8, #0f766e);
       transform-origin: top center;
-      z-index: 1;
     }
 
     .arm.left { left: 42px; transform: rotate(20deg); }
@@ -791,65 +903,48 @@
       to { transform: rotate(-88deg); }
     }
 
-    .danmu {
-      position: absolute;
-      left: 20px;
-      top: 92px;
-      z-index: 6;
-      width: min(360px, 48%);
-      display: grid;
-      gap: 8px;
-      pointer-events: none;
-    }
-
-    .bubble {
-      width: fit-content;
-      max-width: 100%;
-      padding: 8px 11px;
-      border-radius: 7px;
-      background: rgba(24, 32, 51, .74);
-      color: #fff;
-      font-size: 13px;
-      line-height: 1.35;
-      animation: floatIn .3s ease both;
-    }
-
-    @keyframes floatIn {
-      from { opacity: 0; transform: translateX(-12px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
     .caption {
       position: absolute;
       left: 50%;
-      bottom: 158px;
+      bottom: 126px;
       z-index: 8;
-      transform: translateX(-50%);
       width: min(720px, 86%);
-      min-height: 52px;
-      padding: 12px 16px;
+      min-height: 42px;
+      padding: 10px 14px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(120,155,205,.36);
       border-radius: 8px;
-      background: rgba(255,255,255,.88);
-      border: 1px solid rgba(221,226,238,.95);
-      box-shadow: 0 10px 28px rgba(24,32,51,.12);
-      font-size: 15px;
-      line-height: 1.55;
+      background: linear-gradient(135deg, rgba(2, 8, 23, .92), rgba(8, 31, 57, .9));
+      box-shadow: 0 10px 28px rgba(0,0,0,.28), 0 0 24px rgba(37,167,255,.12);
+      color: #eaf2ff;
+      font-size: 14px;
+      line-height: 1.45;
     }
 
     aside {
       display: grid;
+      grid-template-columns: 1fr;
       gap: 12px;
       align-content: start;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    aside::-webkit-scrollbar { width: 8px; }
+    aside::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(120,155,205,.36);
     }
 
     .panel {
       position: relative;
-      overflow: hidden;
-      background: rgba(8, 20, 39, .82);
+      overflow: visible;
+      padding: 12px 14px 14px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 10px;
+      background: var(--panel);
       box-shadow: 0 18px 42px rgba(0,0,0,.26), inset 0 0 0 1px rgba(255,255,255,.035);
-      padding: 14px;
       backdrop-filter: blur(12px);
     }
 
@@ -860,14 +955,27 @@
       top: 0;
       width: 100%;
       height: 3px;
-      background: linear-gradient(90deg, var(--brand), var(--brand-2), var(--accent));
+      background: linear-gradient(90deg, var(--brand), var(--mint), var(--orange));
     }
 
     .panel h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin: 2px 0 10px;
+      color: #f4f9ff;
       font-size: 16px;
       line-height: 1.25;
-      color: #f4f9ff;
+    }
+
+    .panel h2::before {
+      content: "";
+      width: 7px;
+      height: 18px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--brand), var(--mint));
+      box-shadow: 0 0 14px rgba(37,244,200,.35);
+      flex: 0 0 auto;
     }
 
     label {
@@ -879,29 +987,35 @@
 
     input, select, textarea {
       width: 100%;
+      padding: 9px 10px;
       border: 1px solid rgba(120,155,205,.38);
       border-radius: 7px;
+      outline: none;
       background: rgba(3, 10, 24, .55);
       color: #eff6ff;
       font: inherit;
-      padding: 9px 10px;
-      outline: none;
     }
 
     textarea {
-      min-height: 116px;
+      min-height: 76px;
       resize: vertical;
       line-height: 1.5;
     }
 
+    .task-panel,
+    .report-panel { grid-column: auto; }
+
+    .task-panel textarea { min-height: 72px; max-height: 96px; }
+    .drill-panel textarea { min-height: 82px; max-height: 120px; }
+
     input:focus, select:focus, textarea:focus {
-      border-color: rgba(31,111,235,.65);
+      border-color: rgba(37,167,255,.65);
       box-shadow: 0 0 0 3px rgba(37,167,255,.16), 0 0 22px rgba(37,244,200,.1);
     }
 
     .row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 10px;
     }
 
@@ -913,31 +1027,32 @@
     }
 
     button {
-      border: 0;
-      border-radius: 7px;
       min-height: 38px;
       padding: 0 12px;
+      border: 0;
+      border-radius: 8px;
       background: linear-gradient(135deg, var(--brand), #2459c9);
       color: #fff;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 10px 18px rgba(31,111,235,.18);
+      letter-spacing: 0;
     }
 
     button.secondary {
+      border: 1px solid #d7deec;
       background: linear-gradient(180deg, #f4f7fb, #e6ecf7);
       color: #0b1729;
       box-shadow: none;
-      border: 1px solid #d7deec;
     }
 
     button.green {
-      background: linear-gradient(135deg, var(--brand-2), #078268);
+      background: linear-gradient(135deg, #10a37f, #078268);
       box-shadow: 0 10px 18px rgba(16,163,127,.18);
     }
 
     button.warn {
-      background: linear-gradient(135deg, var(--warn), #f97316);
+      background: linear-gradient(135deg, #d97706, #f97316);
       box-shadow: 0 10px 18px rgba(217,119,6,.18);
     }
 
@@ -959,9 +1074,9 @@
 
     .bar {
       height: 9px;
-      border-radius: 999px;
-      background: #e2e8f0;
       overflow: hidden;
+      border-radius: 999px;
+      background: #1f2f4b;
     }
 
     .bar > span {
@@ -969,19 +1084,21 @@
       height: 100%;
       width: 0%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      background: linear-gradient(90deg, var(--brand), var(--mint));
       transition: width .3s ease;
     }
 
     .report {
-      min-height: 124px;
+      min-height: 96px;
+      max-height: 150px;
+      overflow: auto;
       padding: 10px;
+      border: 1px dashed rgba(120,155,205,.42);
       border-radius: 7px;
       background:
         linear-gradient(180deg, rgba(8,20,39,.88), rgba(3,10,24,.92)),
         linear-gradient(90deg, rgba(37,167,255,.08) 1px, transparent 1px);
       background-size: auto, 18px 18px;
-      border: 1px dashed rgba(120,155,205,.42);
       color: #cfe1fa;
       font-size: 13px;
       line-height: 1.55;
@@ -989,8 +1106,17 @@
     }
 
     @media (max-width: 980px) {
-      main { grid-template-columns: 1fr; }
-      .stage { min-height: 640px; }
+      .app {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+      }
+      main {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .stage { height: 640px; min-height: 640px; }
+      aside { grid-template-columns: 1fr; overflow: visible; }
       .shelf,
       .studio-card,
       .light-stand,
@@ -999,10 +1125,22 @@
     }
 
     @media (max-width: 620px) {
-      .app { padding: 12px; }
-      header { align-items: flex-start; flex-direction: column; }
+      body { overflow-x: hidden; }
+      .app {
+        min-height: 100vh;
+        padding: 8px;
+      }
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+        height: auto;
+        gap: 6px;
+      }
+      .header-meta { display: none; }
+      .stage-system { display: none; }
       h1 { font-size: 19px; }
-      .stage { min-height: 590px; }
+      .subtitle { font-size: 12px; }
+      .stage { height: calc(100vh - 112px); min-height: 560px; }
       .avatar-wrap { transform: translateX(-50%) scale(.82); bottom: 64px; margin-bottom: 0; }
       .avatar-wrap.wave { animation: swaySmall .9s ease-in-out infinite alternate; }
       @keyframes swaySmall {
@@ -1011,8 +1149,24 @@
       }
       .avatar-wrap.bow { transform: translateX(-50%) scale(.82) translateY(12px) rotateX(8deg) scaleY(.96); }
       .danmu { width: 72%; }
-      .caption { bottom: 138px; font-size: 13px; }
+      .caption { bottom: 112px; font-size: 12px; width: 92%; }
       .row { grid-template-columns: 1fr; }
+      .set { inset: 58px 10px 16px; }
+      .set::after { left: 22px; font-size: 12px; }
+      .live-top {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        align-items: flex-start;
+      }
+      .metrics { display: none; }
+      .platform-label {
+        max-width: 58vw;
+        font-size: 12px;
+      }
+      .desk { width: 92%; height: 96px; }
+      aside { display: block; }
+      .panel { margin-top: 10px; }
     }
   </style>
 </head>
@@ -1026,28 +1180,40 @@
           <div class="subtitle">轻量数字人 + 提词器口播 + 弹幕陪练 + 合规评分 + 自动报告</div>
         </div>
       </div>
-      <div class="status">
-        <span class="pill">Web 原型</span>
-        <span class="pill">可接 Coze Workflow</span>
-        <span class="pill">国赛演示链路</span>
+      <div class="header-meta">
+        <span class="sys-chip">AI Live OS</span>
+        <span class="sys-chip">Coze Bridge Ready</span>
+        <span class="sys-chip">Training Mode</span>
       </div>
     </header>
 
     <main>
       <section class="stage" aria-label="数字人直播间">
         <div class="set"></div>
+        <div class="stage-system">
+          <span>Digital Host</span>
+          <span>Compliance Guard</span>
+          <span>Live Simulation</span>
+        </div>
         <div class="floor-grid"></div>
         <div class="light-stand"></div>
         <div class="ring-light"></div>
         <div class="camera-rig"></div>
         <div class="studio-card">
           <strong>实时运营看板</strong>
+          <span><b>GMV</b><b>¥42,680</b></span>
+          <span><b>UV</b><b>8,924</b></span>
+          <span><b>转化率</b><b>5.4%</b></span>
           <span><b>商品点击率</b><b>18.6%</b></span>
           <span><b>互动热度</b><b>高</b></span>
           <span><b>合规状态</b><b>预检中</b></span>
         </div>
+
         <div class="live-top">
-          <div class="live-badge">LIVE</div>
+          <div class="live-left">
+            <div class="live-badge">LIVE</div>
+            <div class="platform-label" id="platformLabel">TikTok Shop | Cross-border Live</div>
+          </div>
           <div class="metrics">
             <div class="metric">观看 2,368</div>
             <div class="metric">点赞 18.4k</div>
@@ -1097,13 +1263,16 @@
       </section>
 
       <aside>
-        <section class="panel">
+        <section class="panel task-panel">
           <h2>直播任务</h2>
           <div class="row">
             <div>
               <label for="country">目标市场</label>
               <select id="country">
+                <option>中国</option>
                 <option>美国</option>
+                <option>韩国</option>
+                <option>日本</option>
                 <option>巴西</option>
                 <option>俄罗斯</option>
                 <option>东南亚</option>
@@ -1124,6 +1293,14 @@
           <input id="productName" value="重庆火锅底料">
           <label for="script">数字人提词器</label>
           <textarea id="script">Hi everyone, welcome to our live room. Today I am introducing Chongqing hot pot base. It brings a rich spicy flavor and is easy to cook at home. If you like bold taste, this is a great choice for family dinner. Please check the product card for ingredients, shipping time, and discount details.</textarea>
+          <label for="voiceStyle">声音风格</label>
+          <select id="voiceStyle">
+            <option value="naturalFemale">自然女声（推荐）</option>
+            <option value="naturalMale">自然男声</option>
+            <option value="warm">温柔讲解</option>
+            <option value="energetic">活力带货</option>
+            <option value="default">浏览器默认</option>
+          </select>
           <div class="buttons">
             <button id="speakBtn">开始口播</button>
             <button class="secondary" id="stopBtn">停止</button>
@@ -1131,7 +1308,7 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel action-panel">
           <h2>动作控制</h2>
           <div class="buttons">
             <button class="secondary" data-action="wave">招手</button>
@@ -1141,12 +1318,13 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel drill-panel">
           <h2>弹幕陪练</h2>
           <div class="buttons">
             <button class="warn" data-danmu="price">价格质疑</button>
             <button class="warn" data-danmu="effect">效果承诺</button>
             <button class="warn" data-danmu="logistics">物流售后</button>
+            <button class="warn" data-danmu="random">随机发问</button>
           </div>
           <label for="answer">主播回答</label>
           <textarea id="answer" placeholder="输入主播准备如何回答弹幕，点击评分。"></textarea>
@@ -1155,12 +1333,12 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel score-panel">
           <h2>训练评分</h2>
           <div class="score-grid" id="scores"></div>
         </section>
 
-        <section class="panel">
+        <section class="panel report-panel">
           <h2>自动报告</h2>
           <div class="report" id="report">等待训练数据生成报告。</div>
         </section>
@@ -1180,10 +1358,82 @@
     const productName = document.getElementById("productName");
     const platform = document.getElementById("platform");
     const country = document.getElementById("country");
+    const platformLabel = document.getElementById("platformLabel");
+    const voiceStyle = document.getElementById("voiceStyle");
 
+    const BRIDGE_URL = "http://127.0.0.1:8787";
     const scoreItems = ["合规性", "说服力", "情绪安抚", "转化能力", "口语自然度"];
     let lastScenario = "未开始";
     let utterance = null;
+    let speechQueue = [];
+    let speakingIndex = 0;
+    let shouldStopSpeech = false;
+
+    function isChineseMarket() {
+      return country.value === "中国";
+    }
+
+    function updatePlatformLabel() {
+      const mode = isChineseMarket() ? "Domestic Live" : "Cross-border Live";
+      platformLabel.textContent = `${platform.value} | ${mode}`;
+    }
+
+    function getSpeechLang(text) {
+      if (country.value === "中国" || /[\u4e00-\u9fa5]/.test(text)) return "zh-CN";
+      if (country.value === "日本") return "ja-JP";
+      if (country.value === "韩国") return "ko-KR";
+      if (country.value === "俄罗斯") return "ru-RU";
+      return "en-US";
+    }
+
+    function getVoices() {
+      return window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    }
+
+    function chooseVoice(lang) {
+      const voices = getVoices();
+      const style = voiceStyle.value;
+      if (style === "default" || !voices.length) return null;
+
+      const langPrefix = lang.split("-")[0].toLowerCase();
+      const sameLang = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(langPrefix));
+      const pool = sameLang.length ? sameLang : voices;
+      const femaleHints = ["xiaoxiao", "xiaoyi", "huihui", "yaoyao", "jenny", "aria", "ana", "zira", "nanami", "sunhi", "female", "woman"];
+      const maleHints = ["yunxi", "yunyang", "guy", "davis", "tony", "male", "man"];
+      const naturalHints = ["natural", "online", "neural", "premium", "microsoft"];
+      const preferredHints = style === "naturalMale" ? maleHints : femaleHints;
+
+      function scoreVoice(voice) {
+        const name = `${voice.name || ""} ${voice.voiceURI || ""}`.toLowerCase();
+        let score = 0;
+        if (voice.lang && voice.lang.toLowerCase() === lang.toLowerCase()) score += 10;
+        if (naturalHints.some(h => name.includes(h))) score += 8;
+        if (preferredHints.some(h => name.includes(h))) score += 6;
+        if (name.includes("microsoft")) score += 3;
+        if (name.includes("google")) score += 2;
+        return score;
+      }
+
+      return pool.slice().sort((a, b) => scoreVoice(b) - scoreVoice(a))[0] || null;
+    }
+
+    function splitSpeechText(text) {
+      return text
+        .replace(/\s+/g, " ")
+        .split(/(?<=[。！？!?；;])\s*|(?<=\.)\s+(?=[A-Z])/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    async function callCozeBridge(route, payload) {
+      const response = await fetch(`${BRIDGE_URL}${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error(`Coze bridge error: ${response.status}`);
+      return response.json();
+    }
 
     function setAction(action) {
       avatar.classList.remove("wave", "nod", "bow");
@@ -1198,18 +1448,42 @@
       const text = script.value.trim();
       if (!text) return;
       caption.textContent = text;
+      speechQueue = splitSpeechText(text);
+      speakingIndex = 0;
+      shouldStopSpeech = false;
       face.classList.add("speaking");
       setAction("wave");
+      speakNextSentence();
+    }
+
+    function speakNextSentence() {
+      if (shouldStopSpeech || speakingIndex >= speechQueue.length) {
+        face.classList.remove("speaking");
+        return;
+      }
+      const text = speechQueue[speakingIndex];
+      const lang = getSpeechLang(text);
+      const style = voiceStyle.value;
       utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = /[a-zA-Z]/.test(text) ? "en-US" : "zh-CN";
-      utterance.rate = 0.96;
-      utterance.pitch = 1.08;
-      utterance.onend = () => face.classList.remove("speaking");
-      utterance.onerror = () => face.classList.remove("speaking");
+      utterance.lang = lang;
+      utterance.voice = chooseVoice(lang);
+      utterance.rate = style === "energetic" ? 1.03 : style === "warm" ? 0.9 : 0.94;
+      utterance.pitch = style === "naturalMale" ? 0.9 : style === "energetic" ? 1.12 : 1.02;
+      utterance.volume = 1;
+      utterance.onend = () => {
+        speakingIndex += 1;
+        window.setTimeout(speakNextSentence, style === "energetic" ? 90 : 180);
+      };
+      utterance.onerror = () => {
+        speakingIndex += 1;
+        window.setTimeout(speakNextSentence, 120);
+      };
       speechSynthesis.speak(utterance);
     }
 
     function stopSpeak() {
+      shouldStopSpeech = true;
+      speechQueue = [];
       speechSynthesis.cancel();
       face.classList.remove("speaking");
     }
@@ -1222,37 +1496,57 @@
       while (danmu.children.length > 6) danmu.removeChild(danmu.lastChild);
     }
 
-    async function callBridge(route, payload) {
-      const base = window.COZE_BRIDGE_URL || "http://localhost:8787";
-      const response = await fetch(`${base}${route}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) throw new Error(`Bridge request failed: ${response.status}`);
-      return response.json();
-    }
-
     async function scenario(type) {
       const product = productName.value || "商品";
-      const map = {
+      const cnMap = {
+        price: [
+          `${product}这个价格还能再优惠吗？`,
+          "别家好像更便宜，你们有什么优势？",
+          "今天直播间是活动价吗？"
+        ],
+        effect: [
+          `${product}真的适合所有人吗？`,
+          "能不能保证用了之后一定有效？",
+          "和普通产品相比效果差在哪里？"
+        ],
+        logistics: [
+          "多久可以发货？偏远地区能到吗？",
+          "如果收到破损了怎么处理？",
+          "退换货流程麻烦吗？"
+        ],
+        random: [
+          `${product}适合送礼吗？`,
+          "第一次购买需要注意什么？",
+          "这个商品和同类产品最大的区别是什么？"
+        ]
+      };
+      const enMap = {
         price: [
           `This ${product} is too expensive. Is it the lowest price?`,
-          "Other stores are cheaper. Why should I buy here?"
+          "Other stores are cheaper. Why should I buy here?",
+          "Is there a live-only discount today?"
         ],
         effect: [
           `Can you promise this ${product} works for everyone?`,
-          "Will I definitely see the result after using it?"
+          "Will I definitely see the result after using it?",
+          "What is the main difference from regular products?"
         ],
         logistics: [
-          "How long does shipping take to the US?",
-          "What if the package is damaged or delayed?"
+          "How long does shipping take?",
+          "What if the package is damaged or delayed?",
+          "Can I return it if it is not suitable?"
+        ],
+        random: [
+          "Can you explain the main difference from other similar products?",
+          "Is it suitable as a gift?",
+          "What should I pay attention to before placing an order?"
         ]
       };
-      lastScenario = type === "price" ? "价格质疑" : type === "effect" ? "效果承诺" : "物流售后";
+      const map = isChineseMarket() ? cnMap : enMap;
+      lastScenario = type === "price" ? "价格质疑" : type === "effect" ? "效果承诺" : type === "logistics" ? "物流售后" : "随机发问";
       let lines = map[type];
       try {
-        const ai = await callBridge("/api/danmu", {
+        const ai = await callCozeBridge("/api/danmu", {
           product: productName.value,
           platform: platform.value,
           country: country.value,
@@ -1260,7 +1554,7 @@
         });
         if (Array.isArray(ai.danmu) && ai.danmu.length) lines = ai.danmu;
       } catch (error) {
-        console.info("Using local danmu fallback", error);
+        console.info("Coze bridge unavailable, using local danmu fallback.", error);
       }
       lines.forEach((x, i) => window.setTimeout(() => pushDanmu(x), i * 350));
       caption.textContent = `训练场景：${lastScenario}。请在右侧输入主播回答，系统将从五个维度评分。`;
@@ -1299,7 +1593,7 @@
       }
       const finalText = answer.value.trim();
       try {
-        const ai = await callBridge("/api/score", {
+        const ai = await callCozeBridge("/api/score", {
           product: productName.value,
           platform: platform.value,
           country: country.value,
@@ -1309,13 +1603,14 @@
         if (ai.scores && ai.report) {
           renderScores(ai.scores);
           report.textContent = ai.report;
-          const avg = Math.round(Object.values(ai.scores).reduce((a, b) => a + Number(b), 0) / Object.values(ai.scores).length);
+          const nums = Object.values(ai.scores).map(Number).filter(Number.isFinite);
+          const avg = nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : 0;
           caption.textContent = `Coze 智能体评分完成：综合得分 ${avg}/100。`;
           setAction(avg >= 80 ? "nod" : "bow");
           return;
         }
       } catch (error) {
-        console.info("Using local score fallback", error);
+        console.info("Coze bridge unavailable, using local score fallback.", error);
       }
       const values = calcScore(finalText);
       renderScores(values);
@@ -1339,7 +1634,7 @@
     async function generateScript() {
       const product = productName.value || "重庆火锅底料";
       try {
-        const ai = await callBridge("/api/generate-script", {
+        const ai = await callCozeBridge("/api/generate-script", {
           product,
           platform: platform.value,
           country: country.value
@@ -1350,20 +1645,30 @@
           return;
         }
       } catch (error) {
-        console.info("Using local script fallback", error);
+        console.info("Coze bridge unavailable, using local script fallback.", error);
       }
-      script.value =
-        `Hi everyone, welcome to our live room. Today we are introducing ${product}. ` +
-        `It is designed for customers who enjoy rich and spicy flavor at home. ` +
-        `Please check the product card for ingredients, package details, discount information, and shipping time. ` +
-        `If you have questions about taste, cooking method, or delivery, send them in the chat and I will answer them one by one.`;
-      caption.textContent = "已生成跨境直播英文口播脚本，可直接开始数字人口播。";
+      if (isChineseMarket()) {
+        script.value =
+          `大家好，欢迎来到直播间。今天给大家介绍的是${product}。` +
+          `它适合喜欢便捷下厨和重口味风味的用户，具体配料、规格、优惠和发货信息请以商品卡为准。` +
+          `如果你对口味、使用方法、物流或售后有问题，可以直接打在弹幕里，我会逐一解答。`;
+        caption.textContent = "已生成中文直播口播脚本，可直接开始数字人口播。";
+      } else {
+        script.value =
+          `Hi everyone, welcome to our live room. Today we are introducing ${product}. ` +
+          `It is designed for customers who enjoy rich and spicy flavor at home. ` +
+          `Please check the product card for ingredients, package details, discount information, and shipping time. ` +
+          `If you have questions about taste, cooking method, or delivery, send them in the chat and I will answer them one by one.`;
+        caption.textContent = "已生成跨境直播英文口播脚本，可直接开始数字人口播。";
+      }
     }
 
     document.getElementById("speakBtn").addEventListener("click", speak);
     document.getElementById("stopBtn").addEventListener("click", stopSpeak);
     document.getElementById("generateBtn").addEventListener("click", generateScript);
     document.getElementById("scoreBtn").addEventListener("click", scoreAnswer);
+    platform.addEventListener("change", updatePlatformLabel);
+    country.addEventListener("change", updatePlatformLabel);
 
     document.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => setAction(btn.dataset.action));
@@ -1373,6 +1678,11 @@
       btn.addEventListener("click", () => scenario(btn.dataset.danmu));
     });
 
+    if ("speechSynthesis" in window) {
+      speechSynthesis.getVoices();
+      speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+    }
+
     renderScores({
       "合规性": 0,
       "说服力": 0,
@@ -1380,6 +1690,7 @@
       "转化能力": 0,
       "口语自然度": 0
     });
+    updatePlatformLabel();
   </script>
 </body>
 </html>

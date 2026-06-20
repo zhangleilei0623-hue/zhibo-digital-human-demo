@@ -150,23 +150,108 @@ async function streamCozeBot(prompt) {
  */
 function buildPrompt(route, payload) {
   const product = payload.product || "商品";
-  const market = payload.market || "海外";
+  const market = payload.country || payload.market || "中国";
   const platform = payload.platform || "TikTok";
-  const scenario = payload.scenario || payload.question || payload.text || "";
+  const scenario = payload.scenario || payload.scenarioType || payload.question || payload.text || "";
+  const answer = payload.answer || "";
 
   if (route === "/api/generate-script") {
-    return `请根据以下信息，为海外直播生成一段英文口播稿：\n目标市场：${market}\n直播平台：${platform}\n商品：${product}\n请生成一段自然、口语化、有吸引力的英文直播话术，用于吸引观众关注并介绍商品亮点。`;
+    return `你是“智播云枢”的合规脚本智能体。请根据以下信息生成一段可直接给数字人口播的直播脚本。
+商品：${product}
+目标市场：${market}
+直播平台：${platform}
+要求：
+1. 如果目标市场是中国，输出中文；如果是美国/韩国/日本/巴西/俄罗斯/东南亚，优先输出适合该市场的英文或中英混合表达。
+2. 语言自然、口语化、有直播间互动感。
+3. 避免“全网最低、百分百有效、保证、绝对、根治”等高风险表达。
+4. 只返回 JSON：{"script":"..."}，不要输出 Markdown。`;
   }
 
-  if (route === "/api/danmu" || route === "/api/answer") {
-    return `你是直播间主播，请根据观众的以下质疑/问题，生成主播的应答话术。要求口语化、自然、有说服力，能够化解疑虑并引导购买。\n\n观众质疑：${scenario}`;
+  if (route === "/api/danmu") {
+    return `你是“智播云枢”的弹幕预练智能体。请为数字人直播间生成 3-5 条真实观众弹幕。
+商品：${product}
+目标市场：${market}
+直播平台：${platform}
+场景类型：${scenario}
+要求：
+1. 如果目标市场是中国，必须输出中文弹幕；如果是韩国、日本、俄罗斯、巴西等市场，可输出中文说明或适合该市场的简短外语表达。
+2. 弹幕要像真实直播观众提出的问题，可以包含价格、物流、售后、使用方法、竞品比较等。
+3. 不要生成攻击性、违法或敏感内容。
+4. 只返回 JSON：{"danmu":["弹幕1","弹幕2","弹幕3"]}，不要输出 Markdown。`;
+  }
+
+  if (route === "/api/answer") {
+    return `你是直播间主播教练，请针对以下观众问题生成一段合规、自然、有说服力的主播回答。
+商品：${product}
+观众问题：${scenario}
+只返回 JSON：{"answer":"..."}，不要输出 Markdown。`;
   }
 
   if (route === "/api/score" || route === "/api/evaluate") {
-    return `请作为直播话术评分专家，对以下主播回答进行评分，并指出存在的问题，给出优化建议。\n\n主播回答：${scenario}\n\n请以JSON格式返回评分结果，包含以下维度：合规性、话术服务、互动安排、转化能力、粤语/语言自然度，并给出综合评语和改进建议。`;
+    return `你是“智播云枢”的直播训练评分智能体。请对主播回答进行五维评分并生成训练报告。
+商品：${product}
+目标市场：${market}
+直播平台：${platform}
+训练场景：${scenario}
+主播回答：${answer}
+评分维度必须是：合规性、说服力、情绪安抚、转化能力、口语自然度。
+每个分数为 0-100 的整数。
+报告要包含：训练对象、目标市场、平台、场景、综合得分、主要问题、优化建议、可直接照读的优化话术。
+只返回 JSON：{"scores":{"合规性":88,"说服力":82,"情绪安抚":85,"转化能力":80,"口语自然度":86},"report":"..."}，不要输出 Markdown。`;
   }
 
   return `请处理以下请求：${JSON.stringify(payload)}`;
+}
+
+function extractJsonObject(text) {
+  if (!text || typeof text !== "string") return null;
+  const cleaned = text.replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+function normalize(route, rawText, payload) {
+  const parsed = typeof rawText === "object" ? rawText : extractJsonObject(rawText);
+  const text = typeof rawText === "string" ? rawText.trim() : "";
+
+  if (route === "/api/generate-script") {
+    return {
+      script: parsed?.script || text || localFallback(route, payload).script
+    };
+  }
+
+  if (route === "/api/danmu") {
+    if (Array.isArray(parsed?.danmu)) return { danmu: parsed.danmu.map(String).slice(0, 6) };
+    const lines = text
+      .split(/\r?\n/)
+      .map(line => line.replace(/^[-*\d.\s]+/, "").trim())
+      .filter(Boolean)
+      .slice(0, 6);
+    return { danmu: lines.length ? lines : localFallback(route, payload).danmu };
+  }
+
+  if (route === "/api/score" || route === "/api/evaluate") {
+    if (parsed?.scores && parsed?.report) return { scores: parsed.scores, report: String(parsed.report) };
+    return localFallback(route, payload);
+  }
+
+  if (route === "/api/answer") {
+    return { answer: parsed?.answer || text };
+  }
+
+  return { text };
 }
 
 async function callCozeBot(route, payload) {
@@ -179,24 +264,41 @@ async function callCozeBot(route, payload) {
 
   const prompt = buildPrompt(route, payload);
   const answer = await streamCozeBot(prompt);
-  return { text: answer || "智能体未返回有效内容" };
+  return normalize(route, answer || "", payload);
 }
 
 function localFallback(route, payload) {
   const product = payload.product || "直播商品";
   if (route === "/api/generate-script") {
     return {
-      text: `Hi everyone, welcome to our live room. Today we are introducing ${product}. Please check the product card for details. If you have any questions, feel free to send them in the chat!`
+      script: `Hi everyone, welcome to our live room. Today we are introducing ${product}. Please check the product card for details. If you have any questions, feel free to send them in the chat!`
     };
   }
-  if (route === "/api/danmu" || route === "/api/answer") {
+  if (route === "/api/danmu") {
     return {
-      text: `[本地备选] 感谢您的提问！${product} 是我们的热销产品，性价比很高，有任何疑问欢迎随时提问，我会一一解答。`
+      danmu: [
+        `${product} 和其他同类产品有什么区别？`,
+        "今天直播间有什么优惠？",
+        "多久可以发货，售后怎么处理？",
+        "适合第一次购买的人吗？"
+      ]
     };
   }
+  if (route === "/api/answer") return { answer: `感谢您的提问！${product} 是我们的主推产品，具体优惠和发货信息以商品卡为准，我也可以继续帮您说明使用方法和售后规则。` };
   if (route === "/api/score" || route === "/api/evaluate") {
     return {
-      text: `[本地备选] 评分功能需要配置 COZE_API_TOKEN 和 COZE_BOT_ID 环境变量后使用 Coze 智能体进行分析。`
+      scores: {
+        "合规性": 88,
+        "说服力": 78,
+        "情绪安抚": 82,
+        "转化能力": 76,
+        "口语自然度": 86
+      },
+      report:
+        `本地备选评分：桥接服务已运行，但尚未配置 Coze 智能体参数。\n` +
+        `训练对象：${product}\n` +
+        `训练场景：${payload.scenario || "未填写"}\n\n` +
+        `建议：避免绝对化承诺，补充商品卡、物流、售后等具体信息，并用自然话术引导用户继续提问或下单。`
     };
   }
   return { text: `[本地备选] 收到请求，route: ${route}` };
@@ -209,7 +311,7 @@ function serveFile(req, res) {
   fs.readFile(filePath, (error, data) => {
     if (error) return send(res, 404, "Not found", "text/plain; charset=utf-8");
     const ext = path.extname(filePath).toLowerCase();
-    const type = ext === ".html" ? "text/html; charset=utf-8" : ext === ".js" ? "text/javascript; charset=utf-8" : "text/plain; charset=utf-8";
+    const mimeMap = {".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".gif":"image/gif",".css":"text/css"}; const type = mimeMap[ext] || "text/plain; charset=utf-8";
     send(res, 200, data, type);
   });
 }
@@ -224,7 +326,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const payload = await readBody(req);
       const data = await callCozeBot(req.url, payload);
-      return send(res, 200, { ok: true, text: data.text || data.report || "" });
+      return send(res, 200, { ok: true, ...data });
     } catch (error) {
       return send(res, 500, { ok: false, error: error.message });
     }
