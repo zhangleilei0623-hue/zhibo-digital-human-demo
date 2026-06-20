@@ -335,7 +335,7 @@ const server = http.createServer(async (req, res) => {
   send(res, 405, { error: "Method not allowed" });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   const hasToken = !!process.env.COZE_API_TOKEN;
   const hasBotId = !!process.env.COZE_BOT_ID;
   if (hasToken && hasBotId) {
