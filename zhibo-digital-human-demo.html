@@ -1361,7 +1361,13 @@
     const platformLabel = document.getElementById("platformLabel");
     const voiceStyle = document.getElementById("voiceStyle");
 
-    const BRIDGE_URL = "http://127.0.0.1:8787";
+    function getBridgeUrl() {
+      if (window.COZE_BRIDGE_URL) return window.COZE_BRIDGE_URL;
+      if (location.protocol === "file:") return "http://127.0.0.1:8787";
+      return location.origin;
+    }
+
+    const BRIDGE_URL = getBridgeUrl();
     const scoreItems = ["合规性", "说服力", "情绪安抚", "转化能力", "口语自然度"];
     let lastScenario = "未开始";
     let utterance = null;
