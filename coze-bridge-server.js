@@ -4,6 +4,7 @@ const path = require("path");
 
 const PORT = Number(process.env.PORT || 8787);
 const ROOT = __dirname;
+const COZE_TIMEOUT_MS = Number(process.env.COZE_TIMEOUT_MS || 60000);
 
 const API_BASE = "https://api.coze.cn/v3/chat";
 
@@ -56,7 +57,7 @@ async function streamCozeBot(prompt) {
     bot_id: botId,
     user_id: "local_digital_human_user",
     stream: true,
-    auto_save_history: true,
+    auto_save_history: false,
     additional_messages: [
       {
         role: "user",
@@ -66,27 +67,31 @@ async function streamCozeBot(prompt) {
     ]
   };
 
-  const response = await fetch(API_BASE, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-      "Accept": "text/event-stream"
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Coze API 请求失败 ${response.status}: ${errText.slice(0, 300)}`);
-  }
-
-  // 实时读取流式响应体，解析 SSE
-  const reader = response.body.getReader();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), COZE_TIMEOUT_MS);
+  let reader;
   let sseBuffer = "";
   let answer = "";
 
   try {
+    const response = await fetch(API_BASE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "text/event-stream"
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Coze API 请求失败 ${response.status}: ${errText.slice(0, 300)}`);
+    }
+
+    // 实时读取流式响应体，解析 SSE
+    reader = response.body.getReader();
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -139,7 +144,8 @@ async function streamCozeBot(prompt) {
       }
     }
   } finally {
-    reader.releaseLock();
+    clearTimeout(timer);
+    if (reader) reader.releaseLock();
   }
 
   return answer;
@@ -156,28 +162,22 @@ function buildPrompt(route, payload) {
   const answer = payload.answer || "";
 
   if (route === "/api/generate-script") {
-    return `你是“智播云枢”的合规脚本智能体。请根据以下信息生成一段可直接给数字人口播的直播脚本。
+    return `为数字人直播生成一段合规口播脚本，80-140字。
 商品：${product}
-目标市场：${market}
-直播平台：${platform}
-要求：
-1. 如果目标市场是中国，输出中文；如果是美国/韩国/日本/巴西/俄罗斯/东南亚，优先输出适合该市场的英文或中英混合表达。
-2. 语言自然、口语化、有直播间互动感。
-3. 避免“全网最低、百分百有效、保证、绝对、根治”等高风险表达。
-4. 只返回 JSON：{"script":"..."}，不要输出 Markdown。`;
+市场：${market}
+平台：${platform}
+规则：中国市场用中文；其他市场用简洁英文或中英混合。口语化，有互动感。避免全网最低、百分百、保证、绝对、根治。
+只返回JSON：{"script":"..."}`;
   }
 
   if (route === "/api/danmu") {
-    return `你是“智播云枢”的弹幕预练智能体。请为数字人直播间生成 3-5 条真实观众弹幕。
+    return `生成3条真实直播观众弹幕，每条18字以内。
 商品：${product}
-目标市场：${market}
-直播平台：${platform}
-场景类型：${scenario}
-要求：
-1. 如果目标市场是中国，必须输出中文弹幕；如果是韩国、日本、俄罗斯、巴西等市场，可输出中文说明或适合该市场的简短外语表达。
-2. 弹幕要像真实直播观众提出的问题，可以包含价格、物流、售后、使用方法、竞品比较等。
-3. 不要生成攻击性、违法或敏感内容。
-4. 只返回 JSON：{"danmu":["弹幕1","弹幕2","弹幕3"]}，不要输出 Markdown。`;
+市场：${market}
+平台：${platform}
+场景：${scenario}
+规则：中国市场必须中文；弹幕聚焦价格、物流、售后、效果或竞品比较；不要敏感内容。
+只返回JSON：{"danmu":["...","...","..."]}`;
   }
 
   if (route === "/api/answer") {
@@ -188,16 +188,15 @@ function buildPrompt(route, payload) {
   }
 
   if (route === "/api/score" || route === "/api/evaluate") {
-    return `你是“智播云枢”的直播训练评分智能体。请对主播回答进行五维评分并生成训练报告。
+    return `给主播回答做直播训练评分，报告控制在180字以内。
 商品：${product}
-目标市场：${market}
-直播平台：${platform}
-训练场景：${scenario}
+市场：${market}
+平台：${platform}
+场景：${scenario}
 主播回答：${answer}
-评分维度必须是：合规性、说服力、情绪安抚、转化能力、口语自然度。
-每个分数为 0-100 的整数。
-报告要包含：训练对象、目标市场、平台、场景、综合得分、主要问题、优化建议、可直接照读的优化话术。
-只返回 JSON：{"scores":{"合规性":88,"说服力":82,"情绪安抚":85,"转化能力":80,"口语自然度":86},"report":"..."}，不要输出 Markdown。`;
+维度：合规性、说服力、情绪安抚、转化能力、口语自然度，0-100整数。
+报告包含综合得分、主要问题、2条优化建议、1句可照读话术。
+只返回JSON：{"scores":{"合规性":88,"说服力":82,"情绪安抚":85,"转化能力":80,"口语自然度":86},"report":"..."}`;
   }
 
   return `请处理以下请求：${JSON.stringify(payload)}`;
@@ -259,29 +258,49 @@ async function callCozeBot(route, payload) {
   const botId = process.env.COZE_BOT_ID;
 
   if (!token || !botId) {
-    return localFallback(route, payload);
+    return { source: "local-fallback", reason: "missing-config", ...localFallback(route, payload) };
   }
 
-  const prompt = buildPrompt(route, payload);
-  const answer = await streamCozeBot(prompt);
-  return normalize(route, answer || "", payload);
+  try {
+    const prompt = buildPrompt(route, payload);
+    const answer = await streamCozeBot(prompt);
+    if (!answer || !answer.trim()) {
+      return { source: "local-fallback", reason: "empty-coze-answer", ...localFallback(route, payload) };
+    }
+    return { source: "coze", ...normalize(route, answer, payload) };
+  } catch (error) {
+    console.warn(`Coze fallback for ${route}: ${error.message}`);
+    const reason = error.name === "AbortError" ? "coze-timeout" : "coze-error";
+    return { source: "local-fallback", reason, ...localFallback(route, payload) };
+  }
 }
 
 function localFallback(route, payload) {
   const product = payload.product || "直播商品";
+  const market = payload.country || payload.market || "中国";
+  const chineseMarket = /中国|China|CN/i.test(market);
   if (route === "/api/generate-script") {
     return {
-      script: `Hi everyone, welcome to our live room. Today we are introducing ${product}. Please check the product card for details. If you have any questions, feel free to send them in the chat!`
+      script: chineseMarket
+        ? `大家好，欢迎来到直播间。今天给大家介绍的是${product}。具体规格、活动价格、发货时效和售后规则请以商品卡为准。如果你对口味、使用方法或物流有问题，可以直接发在弹幕里，我会逐一解答。`
+        : `Hi everyone, welcome to our live room. Today we are introducing ${product}. Please check the product card for details, discount information, shipping time, and after-sales service. If you have any questions, feel free to send them in the chat.`
     };
   }
   if (route === "/api/danmu") {
     return {
-      danmu: [
-        `${product} 和其他同类产品有什么区别？`,
-        "今天直播间有什么优惠？",
-        "多久可以发货，售后怎么处理？",
-        "适合第一次购买的人吗？"
-      ]
+      danmu: chineseMarket
+        ? [
+            `${product} 和其他同类产品有什么区别？`,
+            "今天直播间有什么优惠？",
+            "多久可以发货，售后怎么处理？",
+            "适合第一次购买的人吗？"
+          ]
+        : [
+            `What makes this ${product} different from similar products?`,
+            "Is there a live-only discount today?",
+            "How long does shipping take?",
+            "Can I return it if it is not suitable?"
+          ]
     };
   }
   if (route === "/api/answer") return { answer: `感谢您的提问！${product} 是我们的主推产品，具体优惠和发货信息以商品卡为准，我也可以继续帮您说明使用方法和售后规则。` };

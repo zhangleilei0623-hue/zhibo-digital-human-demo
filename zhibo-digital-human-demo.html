@@ -1301,6 +1301,10 @@
             <option value="energetic">活力带货</option>
             <option value="default">浏览器默认</option>
           </select>
+          <label for="voiceSelect">系统语音</label>
+          <select id="voiceSelect">
+            <option value="">自动选择最佳语音</option>
+          </select>
           <div class="buttons">
             <button id="speakBtn">开始口播</button>
             <button class="secondary" id="stopBtn">停止</button>
@@ -1360,6 +1364,7 @@
     const country = document.getElementById("country");
     const platformLabel = document.getElementById("platformLabel");
     const voiceStyle = document.getElementById("voiceStyle");
+    const voiceSelect = document.getElementById("voiceSelect");
 
     function getBridgeUrl() {
       if (window.COZE_BRIDGE_URL) return window.COZE_BRIDGE_URL;
@@ -1374,6 +1379,15 @@
     let speechQueue = [];
     let speakingIndex = 0;
     let shouldStopSpeech = false;
+    let voiceRestartTimer = null;
+    let speechRunId = 0;
+    const requestCache = new Map();
+    const COZE_WAIT = {
+      script: 65000,
+      danmu: 65000,
+      score: 70000,
+      slowNotice: 8000
+    };
 
     function isChineseMarket() {
       return country.value === "中国";
@@ -1396,9 +1410,25 @@
       return window.speechSynthesis ? speechSynthesis.getVoices() : [];
     }
 
+    function refreshVoiceOptions() {
+      if (!voiceSelect) return;
+      const current = voiceSelect.value;
+      const voices = getVoices();
+      voiceSelect.innerHTML = '<option value="">自动选择最佳语音</option>';
+      voices.forEach((voice, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+      if (current && voices[Number(current)]) voiceSelect.value = current;
+    }
+
     function chooseVoice(lang) {
       const voices = getVoices();
       const style = voiceStyle.value;
+      const manualIndex = voiceSelect.value === "" ? -1 : Number(voiceSelect.value);
+      if (manualIndex >= 0 && Number.isInteger(manualIndex) && voices[manualIndex]) return voices[manualIndex];
       if (style === "default" || !voices.length) return null;
 
       const langPrefix = lang.split("-")[0].toLowerCase();
@@ -1431,14 +1461,59 @@
         .filter(Boolean);
     }
 
-    async function callCozeBridge(route, payload) {
-      const response = await fetch(`${BRIDGE_URL}${route}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) throw new Error(`Coze bridge error: ${response.status}`);
-      return response.json();
+    function callCozeBridge(route, payload, timeoutMs = 4500) {
+      const key = `${route}:${JSON.stringify(payload)}`;
+      if (requestCache.has(key)) return requestCache.get(key);
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+      const request = fetch(`${BRIDGE_URL}${route}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        })
+        .then(response => {
+          if (!response.ok) throw new Error(`Coze bridge error: ${response.status}`);
+          return response.json();
+        })
+        .finally(() => window.clearTimeout(timer))
+        .catch(error => {
+          requestCache.delete(key);
+          throw error;
+        });
+      requestCache.set(key, request);
+      return request;
+    }
+
+    function getBridgeStatusMessage(error) {
+      if (error && error.name === "AbortError") {
+        return "Coze 智能体暂未在限定时间内返回，已保留本地快速结果。";
+      }
+      if (location.protocol === "file:") {
+        return "本地桥接服务未运行或 8787 端口不可访问，已保留本地快速结果。";
+      }
+      return "Coze 智能体暂未返回，已保留本地快速结果。";
+    }
+
+    function getFallbackReasonMessage(ai) {
+      if (!ai || ai.source !== "local-fallback") return "";
+      if (ai.reason === "missing-config") return "服务端未配置 Coze Token 或 Bot ID，已使用备用结果。";
+      if (ai.reason === "coze-timeout") return "Coze 智能体暂未在限定时间内返回，已使用备用结果。";
+      if (ai.reason === "empty-coze-answer") return "Coze 智能体未返回有效内容，已使用备用结果。";
+      return "Coze 智能体暂未返回，已使用备用结果。";
+    }
+
+    function appendReportStatus(message) {
+      const statusLine = `智能体状态：${message}`;
+      report.textContent = report.textContent.replace(/\n\n智能体状态：[\s\S]*$/, "");
+      report.textContent += `\n\n${statusLine}`;
+    }
+
+    function trackBackgroundCoze(promise, message) {
+      const timer = window.setTimeout(() => {
+        caption.textContent = message;
+      }, COZE_WAIT.slowNotice);
+      return promise.finally(() => window.clearTimeout(timer));
     }
 
     function setAction(action) {
@@ -1453,17 +1528,18 @@
       stopSpeak();
       const text = script.value.trim();
       if (!text) return;
+      const runId = ++speechRunId;
       caption.textContent = text;
       speechQueue = splitSpeechText(text);
       speakingIndex = 0;
       shouldStopSpeech = false;
       face.classList.add("speaking");
       setAction("wave");
-      speakNextSentence();
+      speakNextSentence(runId);
     }
 
-    function speakNextSentence() {
-      if (shouldStopSpeech || speakingIndex >= speechQueue.length) {
+    function speakNextSentence(runId = speechRunId) {
+      if (runId !== speechRunId || shouldStopSpeech || speakingIndex >= speechQueue.length) {
         face.classList.remove("speaking");
         return;
       }
@@ -1473,25 +1549,35 @@
       utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang;
       utterance.voice = chooseVoice(lang);
-      utterance.rate = style === "energetic" ? 1.03 : style === "warm" ? 0.9 : 0.94;
-      utterance.pitch = style === "naturalMale" ? 0.9 : style === "energetic" ? 1.12 : 1.02;
+      utterance.rate = style === "energetic" ? 1.12 : style === "warm" ? 0.84 : style === "naturalMale" ? 0.92 : 0.96;
+      utterance.pitch = style === "naturalMale" ? 0.78 : style === "energetic" ? 1.25 : style === "warm" ? 1.08 : 1.02;
       utterance.volume = 1;
       utterance.onend = () => {
+        if (runId !== speechRunId) return;
         speakingIndex += 1;
-        window.setTimeout(speakNextSentence, style === "energetic" ? 90 : 180);
+        window.setTimeout(() => speakNextSentence(runId), style === "energetic" ? 90 : 180);
       };
       utterance.onerror = () => {
+        if (runId !== speechRunId) return;
         speakingIndex += 1;
-        window.setTimeout(speakNextSentence, 120);
+        window.setTimeout(() => speakNextSentence(runId), 120);
       };
       speechSynthesis.speak(utterance);
     }
 
     function stopSpeak() {
+      speechRunId += 1;
       shouldStopSpeech = true;
       speechQueue = [];
       speechSynthesis.cancel();
       face.classList.remove("speaking");
+    }
+
+    function restartSpeechWithNewVoice() {
+      if (!("speechSynthesis" in window)) return;
+      if (!speechSynthesis.speaking && !speechSynthesis.pending) return;
+      window.clearTimeout(voiceRestartTimer);
+      voiceRestartTimer = window.setTimeout(speak, 120);
     }
 
     function pushDanmu(text) {
@@ -1551,19 +1637,29 @@
       const map = isChineseMarket() ? cnMap : enMap;
       lastScenario = type === "price" ? "价格质疑" : type === "effect" ? "效果承诺" : type === "logistics" ? "物流售后" : "随机发问";
       let lines = map[type];
-      try {
-        const ai = await callCozeBridge("/api/danmu", {
+      lines.forEach((x, i) => window.setTimeout(() => pushDanmu(x), i * 220));
+      caption.textContent = `训练场景：${lastScenario}。已先生成本地弹幕，Coze 返回后会自动更新。`;
+
+      trackBackgroundCoze(callCozeBridge("/api/danmu", {
           product: productName.value,
           platform: platform.value,
           country: country.value,
           scenarioType: type
+        }, COZE_WAIT.danmu), `训练场景：${lastScenario}。Coze 智能体仍在后台生成，当前本地弹幕可先用于演示。`)
+        .then(ai => {
+          if (Array.isArray(ai.danmu) && ai.danmu.length) {
+            danmu.innerHTML = "";
+            ai.danmu.forEach((x, i) => window.setTimeout(() => pushDanmu(x), i * 220));
+            caption.textContent = ai.source === "local-fallback"
+              ? `训练场景：${lastScenario}。${getFallbackReasonMessage(ai)}`
+              : `训练场景：${lastScenario}。已使用 Coze 智能体弹幕。`;
+          }
+        })
+        .catch(error => {
+          const message = getBridgeStatusMessage(error);
+          caption.textContent = `训练场景：${lastScenario}。${message}`;
+          console.info("Coze bridge unavailable, using local danmu fallback.", error);
         });
-        if (Array.isArray(ai.danmu) && ai.danmu.length) lines = ai.danmu;
-      } catch (error) {
-        console.info("Coze bridge unavailable, using local danmu fallback.", error);
-      }
-      lines.forEach((x, i) => window.setTimeout(() => pushDanmu(x), i * 350));
-      caption.textContent = `训练场景：${lastScenario}。请在右侧输入主播回答，系统将从五个维度评分。`;
     }
 
     function calcScore(text) {
@@ -1598,75 +1694,89 @@
         answer.value = "Thank you for asking. Please check the product card for the current discount. We do not promise the lowest price, but we provide clear ingredients, stable shipping information, and after-sales support.";
       }
       const finalText = answer.value.trim();
-      try {
-        const ai = await callCozeBridge("/api/score", {
-          product: productName.value,
-          platform: platform.value,
-          country: country.value,
-          scenario: lastScenario,
-          answer: finalText
-        });
-        if (ai.scores && ai.report) {
-          renderScores(ai.scores);
-          report.textContent = ai.report;
-          const nums = Object.values(ai.scores).map(Number).filter(Number.isFinite);
-          const avg = nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : 0;
-          caption.textContent = `Coze 智能体评分完成：综合得分 ${avg}/100。`;
-          setAction(avg >= 80 ? "nod" : "bow");
-          return;
-        }
-      } catch (error) {
-        console.info("Coze bridge unavailable, using local score fallback.", error);
-      }
-      const values = calcScore(finalText);
-      renderScores(values);
-      const avg = Math.round(Object.values(values).reduce((a, b) => a + b, 0) / scoreItems.length);
-      const hasRisk = values["合规性"] < 70;
+      const localValues = calcScore(finalText);
+      renderScores(localValues);
+      const localAvg = Math.round(Object.values(localValues).reduce((a, b) => a + b, 0) / scoreItems.length);
+      const localHasRisk = localValues["合规性"] < 70;
       report.textContent =
         `训练对象：${productName.value}\n` +
         `目标市场：${country.value} | 平台：${platform.value}\n` +
         `训练场景：${lastScenario}\n` +
-        `综合得分：${avg}/100\n\n` +
-        `诊断结论：${hasRisk ? "回答中存在较明显合规风险，需避免绝对化承诺、最低价承诺或效果保证。" : "回答整体较稳健，能够兼顾说明、安抚和转化。" }\n\n` +
+        `综合得分：${localAvg}/100\n\n` +
+        `诊断结论：${localHasRisk ? "回答中存在较明显合规风险，需避免绝对化承诺、最低价承诺或效果保证。" : "回答整体较稳健，能够兼顾说明、安抚和转化。"}\n\n` +
         `优化建议：\n` +
         `1. 用“当前活动价”“以商品卡为准”替代“全网最低”。\n` +
         `2. 用“适合部分需求”“建议查看成分/说明”替代“保证有效”。\n` +
-        `3. 对跨境物流问题，应明确时效区间和售后路径，避免绝对承诺。\n` +
-        `4. 可将本报告接入 Coze 复盘智能体，生成完整实训记录。`;
-      caption.textContent = `评分完成：综合得分 ${avg}/100。`;
-      setAction(avg >= 80 ? "nod" : "bow");
+        `3. 对物流和售后问题，应明确时效区间和售后路径，避免绝对承诺。\n` +
+        `4. Coze 智能体正在后台生成更完整评分，返回后会自动更新。`;
+      caption.textContent = `本地评分完成：综合得分 ${localAvg}/100。Coze 智能体后台分析中。`;
+      setAction(localAvg >= 80 ? "nod" : "bow");
+
+      trackBackgroundCoze(callCozeBridge("/api/score", {
+        product: productName.value,
+        platform: platform.value,
+        country: country.value,
+        scenario: lastScenario,
+        answer: finalText
+      }, COZE_WAIT.score), `本地评分完成：综合得分 ${localAvg}/100。Coze 智能体仍在后台生成完整报告。`)
+        .then(ai => {
+          if (ai.scores && ai.report) {
+            renderScores(ai.scores);
+            report.textContent = ai.report;
+            const nums = Object.values(ai.scores).map(Number).filter(Number.isFinite);
+            const avg = nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : 0;
+            if (ai.source === "local-fallback") {
+              const message = getFallbackReasonMessage(ai);
+              appendReportStatus(message);
+              caption.textContent = `本地/备用评分完成：综合得分 ${avg}/100。${message}`;
+            } else {
+              caption.textContent = `Coze 智能体评分完成：综合得分 ${avg}/100。`;
+            }
+            setAction(avg >= 80 ? "nod" : "bow");
+          }
+        })
+        .catch(error => {
+          const message = getBridgeStatusMessage(error);
+          appendReportStatus(message);
+          caption.textContent = `本地评分完成：综合得分 ${localAvg}/100。${message}`;
+          console.info("Coze bridge unavailable, keeping local score.", error);
+        });
     }
 
     async function generateScript() {
       const product = productName.value || "重庆火锅底料";
-      try {
-        const ai = await callCozeBridge("/api/generate-script", {
-          product,
-          platform: platform.value,
-          country: country.value
-        });
-        if (ai.script) {
-          script.value = ai.script;
-          caption.textContent = "已从 Coze 智能体生成直播脚本，可直接开始数字人口播。";
-          return;
-        }
-      } catch (error) {
-        console.info("Coze bridge unavailable, using local script fallback.", error);
-      }
       if (isChineseMarket()) {
         script.value =
           `大家好，欢迎来到直播间。今天给大家介绍的是${product}。` +
-          `它适合喜欢便捷下厨和重口味风味的用户，具体配料、规格、优惠和发货信息请以商品卡为准。` +
-          `如果你对口味、使用方法、物流或售后有问题，可以直接打在弹幕里，我会逐一解答。`;
-        caption.textContent = "已生成中文直播口播脚本，可直接开始数字人口播。";
+          `它适合想要快速了解商品特点、优惠信息和使用方式的用户。` +
+          `具体规格、价格、发货和售后请以商品卡为准。如果你有任何问题，可以直接发在弹幕里，我会逐一解答。`;
+        caption.textContent = "已秒级生成本地中文脚本，Coze 智能体正在后台优化。";
       } else {
         script.value =
           `Hi everyone, welcome to our live room. Today we are introducing ${product}. ` +
-          `It is designed for customers who enjoy rich and spicy flavor at home. ` +
           `Please check the product card for ingredients, package details, discount information, and shipping time. ` +
-          `If you have questions about taste, cooking method, or delivery, send them in the chat and I will answer them one by one.`;
-        caption.textContent = "已生成跨境直播英文口播脚本，可直接开始数字人口播。";
+          `If you have questions about taste, usage, delivery, or after-sales service, send them in the chat and I will answer them one by one.`;
+        caption.textContent = "已秒级生成本地直播脚本，Coze 智能体正在后台优化。";
       }
+
+      trackBackgroundCoze(callCozeBridge("/api/generate-script", {
+        product,
+        platform: platform.value,
+        country: country.value
+      }, COZE_WAIT.script), "已生成本地脚本。Coze 智能体仍在后台优化，返回后会自动替换。")
+        .then(ai => {
+          if (ai.script) {
+            script.value = ai.script;
+            caption.textContent = ai.source === "local-fallback"
+              ? `已保留可用脚本。${getFallbackReasonMessage(ai)}`
+              : "Coze 智能体脚本已返回，已自动替换为智能体版本。";
+          }
+        })
+        .catch(error => {
+          const message = getBridgeStatusMessage(error);
+          caption.textContent = `已保留本地脚本。${message}`;
+          console.info("Coze bridge unavailable, keeping local script.", error);
+        });
     }
 
     document.getElementById("speakBtn").addEventListener("click", speak);
@@ -1675,6 +1785,8 @@
     document.getElementById("scoreBtn").addEventListener("click", scoreAnswer);
     platform.addEventListener("change", updatePlatformLabel);
     country.addEventListener("change", updatePlatformLabel);
+    voiceStyle.addEventListener("change", restartSpeechWithNewVoice);
+    voiceSelect.addEventListener("change", restartSpeechWithNewVoice);
 
     document.querySelectorAll("[data-action]").forEach(btn => {
       btn.addEventListener("click", () => setAction(btn.dataset.action));
@@ -1686,7 +1798,8 @@
 
     if ("speechSynthesis" in window) {
       speechSynthesis.getVoices();
-      speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+      refreshVoiceOptions();
+      speechSynthesis.onvoiceschanged = refreshVoiceOptions;
     }
 
     renderScores({

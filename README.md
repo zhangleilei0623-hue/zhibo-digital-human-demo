@@ -24,7 +24,10 @@ npm start
 ```text
 COZE_API_TOKEN=你的 Coze 个人访问令牌
 COZE_BOT_ID=你的 Coze 智能体 Bot ID
+COZE_TIMEOUT_MS=60000
 ```
+
+`COZE_TIMEOUT_MS` 表示服务端等待 Coze 智能体返回的最长时间，单位是毫秒。演示时建议用 `60000`，页面会先显示本地快速结果，Coze 返回后再自动替换。
 
 如果你的智能体在国际版 Coze，可以按实际接口域名扩展服务端配置；当前默认使用扣子中国接口：
 
